@@ -277,6 +277,7 @@ pub fn should_attack_target(
     my_troops: u32,
     target_troops: u32,
     consecutive_passes: u32,
+    mood: &Mood,
 ) -> bool {
     if target_troops == 0 { return true; }
 
@@ -289,13 +290,21 @@ pub fn should_attack_target(
         Personality::Stubborn  => 2.5,
     };
 
-    let adjusted = (base_threshold - consecutive_passes as f32 * 0.2).max(1.0);
+    let mood_adjustment =
+        (mood.aggression - 0.5) * 0.8
+      + (mood.desperation - 0.5) * 0.6
+      + (mood.confidence - 0.5) * 0.4;
+
+    let pass_adjustment = consecutive_passes as f32 * 0.2;
+
+    let adjusted = (base_threshold - mood_adjustment - pass_adjustment).max(1.0);
     ratio >= adjusted
 }
 
 pub fn forced_attack_target(
     state: &GameState,
     country_id: CountryId,
+    mood: &Mood,
 ) -> Option<CountryId> {
     let cs = &state.countries[&country_id];
     let def = &state.defs[&country_id];
@@ -311,6 +320,7 @@ pub fn forced_attack_target(
                 cs.troops,
                 nc.troops,
                 cs.consecutive_passes,
+                mood,
             )
         })
         .min_by_key(|&&n| state.countries[&n].troops)
@@ -486,17 +496,28 @@ mod tests {
 
     #[test]
     fn test_should_attack_impulsive() {
-        assert!(should_attack_target(&Personality::Impulsive, 147, 72, 0));
+        let neutral = Mood::default();
+        assert!(should_attack_target(&Personality::Impulsive, 147, 72, 0, &neutral));
     }
 
     #[test]
     fn test_should_attack_analyst_no() {
-        assert!(!should_attack_target(&Personality::Analyst, 127, 73, 0));
+        let neutral = Mood::default();
+        assert!(!should_attack_target(&Personality::Analyst, 127, 73, 0, &neutral));
     }
 
     #[test]
     fn test_should_attack_analyst_with_passes() {
-        assert!(should_attack_target(&Personality::Analyst, 127, 73, 2));
+        let neutral = Mood::default();
+        assert!(should_attack_target(&Personality::Analyst, 127, 73, 2, &neutral));
+    }
+
+    #[test]
+    fn test_mood_affects_attack_threshold() {
+        let neutral = Mood::default();
+        let aggressive = Mood { aggression: 0.9, desperation: 0.5, confidence: 0.8, diplomacy: 0.5 };
+        assert!(!should_attack_target(&Personality::Analyst, 127, 73, 0, &neutral));
+        assert!(should_attack_target(&Personality::Analyst, 127, 73, 0, &aggressive));
     }
 
     #[test]

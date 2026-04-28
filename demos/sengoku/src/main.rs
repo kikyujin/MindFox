@@ -107,6 +107,10 @@ async fn decide_action(
         return TurnActions { country_id: id, actions: vec![Action::Conscript] };
     }
 
+    // Mood算出（MxBS記憶から）
+    let slug = memory::country_slug(id);
+    let mood = memory::get_agent_mood(mxbs, reg, slug, state.turn);
+
     // === 強制ロジック ===
 
     if let Some(target) = engine::killable_target(state, id) {
@@ -126,10 +130,10 @@ async fn decide_action(
         }
     }
 
-    // 4. 性格別の強制攻撃（覇気ルール）
-    if let Some(target) = engine::forced_attack_target(state, id) {
+    // 4. 性格別の強制攻撃（覇気ルール + Mood補正）
+    if let Some(target) = engine::forced_attack_target(state, id, &mood) {
         let target_name = &state.defs[&target].daimyo;
-        println!("  {} → {}を攻める好機！（兵力差で優勢）", def.daimyo, target_name);
+        println!("  {} → {}を攻める好機！（兵力差で優勢, 覇気:{:.2}）", def.daimyo, target_name, mood.aggression);
         let mut actions = vec![Action::Attack(target)];
         if engine::can_afford_conscript(cs, koku) {
             actions.push(Action::Conscript);
@@ -142,7 +146,6 @@ async fn decide_action(
     // === LLM に判断を投げる ===
 
     let max_neighbor_troops = neighbors.iter().map(|(_, _, t)| *t).max().unwrap_or(0);
-    let slug = memory::country_slug(id);
     let query = llm::situation_vector(cs.troops, cs.gold, koku, max_neighbor_troops, &def.personality);
     let memories = memory::get_memories_for_agent(mxbs, reg, slug, query, state.turn);
     let mem_slice: Vec<String> = memories.into_iter().take(5).collect();
@@ -292,6 +295,19 @@ async fn process_alliance_proposals(
             let from_name = &state.defs[&a].daimyo;
             let to_name = &state.defs[&b].daimyo;
             println!("  → {}は{}への攻撃を準備中のため同盟を拒否", to_name, from_name);
+            results.push((a, b, false));
+            continue;
+        }
+
+        // Moodベースの自動拒否（信頼度 < 0.3）
+        let trust_toward_proposer = memory::compute_diplomacy_toward(
+            mxbs, reg, memory::country_slug(b), memory::country_slug(a), state.turn,
+        );
+        if trust_toward_proposer < 0.3 {
+            let from_name = &state.defs[&a].daimyo;
+            let to_name = &state.defs[&b].daimyo;
+            println!("  → {}は{}を信用できず同盟を拒否（信頼度:{:.2}）",
+                     to_name, from_name, trust_toward_proposer);
             results.push((a, b, false));
             continue;
         }
@@ -446,7 +462,20 @@ async fn generate_inner_voices(
         if !state.countries[&ta.country_id].alive { continue; }
         let def = &state.defs[&ta.country_id];
         let cs = &state.countries[&ta.country_id];
-        let summary = format!("兵力:{}, 金:{}, 領土数:{}", cs.troops, cs.gold, cs.territories.len());
+        let mood = memory::get_agent_mood(mxbs, reg, memory::country_slug(ta.country_id), state.turn);
+        let mood_hint = if mood.desperation > 0.7 {
+            "あなたは追い詰められている。焦りと恐怖が支配している。"
+        } else if mood.aggression > 0.7 {
+            "あなたは勝利に酔っている。もっと領土が欲しい。"
+        } else if mood.confidence > 0.7 {
+            "あなたは絶好調。天下は近い。"
+        } else if mood.confidence < 0.3 {
+            "あなたは弱気だ。周囲の強国に怯えている。"
+        } else {
+            "冷静に状況を分析している。"
+        };
+        let summary = format!("兵力:{}, 金:{}, 領土数:{}\n気分: {}",
+            cs.troops, cs.gold, cs.territories.len(), mood_hint);
         let prompt = llm::build_inner_voice_prompt(&def.daimyo, &summary);
         print!("  {} 内心...", def.daimyo);
         std::io::Write::flush(&mut std::io::stdout()).ok();
@@ -486,6 +515,20 @@ async fn main() {
         let defs_clone = state.defs.clone();
         engine::process_economy(&mut state, &defs_clone);
         display_status(&state);
+
+        // Moodログ表示
+        println!("\n【気分】");
+        let mut alive_ids: Vec<CountryId> = state.countries.keys()
+            .filter(|id| state.countries[id].alive)
+            .cloned().collect();
+        alive_ids.sort();
+        for &aid in &alive_ids {
+            let slug = memory::country_slug(aid);
+            let mood = memory::get_agent_mood(&mxbs, &reg, slug, state.turn);
+            let def = &state.defs[&aid];
+            println!("  {:10} | 覇気:{:.2} 焦燥:{:.2} 自信:{:.2} 外交:{:.2}",
+                def.daimyo, mood.aggression, mood.desperation, mood.confidence, mood.diplomacy);
+        }
 
         let all_actions = collect_all_actions(&state, &mxbs, &reg).await;
 

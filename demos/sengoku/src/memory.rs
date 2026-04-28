@@ -215,6 +215,105 @@ pub async fn score_all_pending(
         texts.len(), total.as_secs_f64(), total.as_secs_f64() / texts.len() as f64);
 }
 
+pub fn compute_mood(recent_features: &[[u8; 16]]) -> crate::types::Mood {
+    use crate::types::Mood;
+
+    if recent_features.is_empty() {
+        return Mood::default();
+    }
+
+    let n = recent_features.len() as f32;
+
+    let avg = |indices: &[usize]| -> f32 {
+        let sum: f32 = recent_features.iter()
+            .map(|f| indices.iter().map(|&i| f[i] as f32).sum::<f32>() / indices.len() as f32)
+            .sum();
+        (sum / n) / 255.0
+    };
+
+    let avg_inv = |indices: &[usize]| -> f32 {
+        let sum: f32 = recent_features.iter()
+            .map(|f| indices.iter().map(|&i| (255 - f[i]) as f32).sum::<f32>() / indices.len() as f32)
+            .sum();
+        (sum / n) / 255.0
+    };
+
+    Mood {
+        aggression: avg(&[0, 3, 14]),
+        desperation: (avg(&[10, 11]) + avg_inv(&[13])) / 2.0,
+        confidence: avg(&[3, 13, 8]),
+        diplomacy: (avg(&[4, 6]) + avg_inv(&[5])) / 2.0,
+    }
+}
+
+pub fn get_agent_mood(
+    mxbs: &MxBS,
+    reg: &AgentRegistry,
+    agent_slug: &str,
+    current_turn: u32,
+) -> crate::types::Mood {
+    let owner_id = match reg.owner_id(agent_slug) {
+        Some(id) => id,
+        None => return crate::types::Mood::default(),
+    };
+    let viewer_bit = match reg.bit(agent_slug) {
+        Some(b) => b,
+        None => return crate::types::Mood::default(),
+    };
+
+    let query = [128u8; FACTOR_DIM];
+    let results = mxbs.search(query, owner_id, viewer_bit)
+        .current_turn(current_turn)
+        .owner(owner_id)
+        .limit(8)
+        .exec()
+        .unwrap_or_default();
+
+    let features: Vec<[u8; 16]> = results.iter()
+        .filter(|r| r.features != [0u8; 16])
+        .map(|r| r.features)
+        .collect();
+
+    compute_mood(&features)
+}
+
+pub fn compute_diplomacy_toward(
+    mxbs: &MxBS,
+    reg: &AgentRegistry,
+    agent_slug: &str,
+    counterpart_slug: &str,
+    current_turn: u32,
+) -> f32 {
+    let owner_id = match reg.owner_id(agent_slug) {
+        Some(id) => id,
+        None => return 0.5,
+    };
+    let counterpart_owner = match reg.owner_id(counterpart_slug) {
+        Some(id) => id,
+        None => return 0.5,
+    };
+    let viewer_bit = match reg.bit(agent_slug) {
+        Some(b) => b,
+        None => return 0.5,
+    };
+
+    let query = [128u8; FACTOR_DIM];
+    let results = mxbs.search(query, owner_id, viewer_bit)
+        .current_turn(current_turn)
+        .from(counterpart_owner)
+        .limit(5)
+        .exec()
+        .unwrap_or_default();
+
+    if results.is_empty() {
+        return 0.5;
+    }
+
+    let features: Vec<[u8; 16]> = results.iter().map(|r| r.features).collect();
+    let mood = compute_mood(&features);
+    mood.diplomacy
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -278,5 +377,39 @@ mod tests {
         let f = event_features(EventType::BattleDefender { won: false, loss_ratio: 0.8 });
         assert!(f[2] < 80);
         assert!(f[11] > 200);
+    }
+
+    #[test]
+    fn test_mood_neutral_on_empty() {
+        let mood = compute_mood(&[]);
+        assert!((mood.aggression - 0.5).abs() < 0.01);
+        assert!((mood.desperation - 0.5).abs() < 0.01);
+    }
+
+    #[test]
+    fn test_mood_aggressive() {
+        let features = [[200, 128, 200, 230, 128, 128, 128, 128, 128, 128, 128, 128, 128, 200, 220, 128]];
+        let mood = compute_mood(&features);
+        assert!(mood.aggression > 0.7, "aggression should be high, got {}", mood.aggression);
+    }
+
+    #[test]
+    fn test_mood_desperate() {
+        let features = [[128, 128, 128, 50, 128, 128, 128, 128, 50, 128, 220, 230, 128, 30, 128, 200]];
+        let mood = compute_mood(&features);
+        assert!(mood.desperation > 0.6, "desperation should be high, got {}", mood.desperation);
+    }
+
+    #[test]
+    fn test_diplomacy_default_neutral() {
+        let mood = compute_mood(&[]);
+        assert!((mood.diplomacy - 0.5).abs() < 0.01);
+    }
+
+    #[test]
+    fn test_mood_low_trust_rejects() {
+        let features = [[128, 128, 128, 128, 30, 230, 30, 128, 128, 128, 128, 128, 128, 128, 128, 128]];
+        let mood = compute_mood(&features);
+        assert!(mood.diplomacy < 0.3, "diplomacy should be low, got {}", mood.diplomacy);
     }
 }

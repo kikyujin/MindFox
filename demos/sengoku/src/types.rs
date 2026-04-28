@@ -37,6 +37,20 @@ pub struct CountryState {
 }
 
 #[derive(Debug, Clone)]
+pub struct Mood {
+    pub aggression: f32,
+    pub desperation: f32,
+    pub confidence: f32,
+    pub diplomacy: f32,
+}
+
+impl Default for Mood {
+    fn default() -> Self {
+        Mood { aggression: 0.5, desperation: 0.5, confidence: 0.5, diplomacy: 0.5 }
+    }
+}
+
+#[derive(Debug, Clone)]
 pub enum Action {
     Conscript,
     Alliance(CountryId),
