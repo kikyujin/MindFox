@@ -3,6 +3,9 @@ files:
     mxbs_concept.md:
         capsule: cap_573d4ed5
         version: md5:bcafbcb3bfb4c130197f636ef71461fe
+    mxbs_roadmap.md:
+        capsule: cap_70116e37
+        version: md5:b0b3db219b1041da94013fa7ea73209d
     mxbs_spec.md:
         capsule: cap_f0796766
         version: md5:a92be030c9b9756ec869d740156f0134

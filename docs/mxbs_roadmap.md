@@ -1,0 +1,177 @@
+# MxBS — Roadmap
+
+> Last updated: 2026-04-28
+
+署名: 2026-04-28 Kikyujin - Mahito KIDA
+
+---
+
+## 1. 変更履歴
+
+### v0.1.0 (2026-04-28) — MxBS Rust crate 初版
+
+MxBS Rust crate を1日で全機能実装。34テスト全パス。
+
+- Cell 構造体 + ビルダーパターン
+- MxBS::open() + SQLite スキーマ自動作成
+- store / get / delete（x 権限チェック）
+- cosine_similarity（u8×16）
+- search（ビルダーパターン、ACL + フィルタ + ベクトル検索 + queryなし検索）
+- dream（buried_score 降順、immortal 除外）
+- reinforce（importance 更新、w バイパス）
+- inspire（因子ベクトル近傍検索）
+- update_group_bits / update_mode / update_meta（w チェック）
+- set_features / get_unscored（遅延スコアリング）
+- save_to（SQLite backup API）
+- stats（total / scored / unscored）
+- `pub mod preset` — Preset + scoring_prompt + parse_scores
+- `pub mod agents` — AgentRegistry + store_public/private/search/dream ショートカット
+- MxMindFox crate は作らない決定（YAGNI）
+
+### v0.0.0 (2026-04-27) — パラダイムシフト
+
+xMBS Lite（bge-m3 / 1024次元 / ONNX / sqlite-vec）を全面廃止。
+MxBS（16バイト因子ベクトル / SQLite のみ）をメインストリームに据える。
+mxbs_lite.py + mxmf_lite.py で Hawaii 2035 シナリオ 5エージェント×6ターン完走。
+
+---
+
+## 2. 現状
+
+### 完了済み
+
+| マイルストーン | 日付 | 状態 |
+|---|---|---|
+| MxBS コンセプト策定（mxbs_concept.md） | 2026-04-27 | ✅ |
+| Python 実証（mxbs_lite.py + mxmf_lite.py、Hawaii 2035 6ターン） | 2026-04-27 | ✅ |
+| MxBS 仕様書（mxbs_spec.md v0.1.0） | 2026-04-28 | ✅ |
+| MxBS Rust crate 全機能実装（34テスト） | 2026-04-28 | ✅ |
+| MxMindFox crate 不要の判断 | 2026-04-28 | ✅ |
+
+### 未完了
+
+| マイルストーン | 優先度 | 状態 |
+|---|---|---|
+| Hawaii 2035 再走（Rust MxBS + Python ホスト） | 高 | 🔜 次 |
+| C bindings（cdylib） | 高 | 待機（Hawaii 再走後） |
+| preset_guide.md | 中 | — |
+| Indian Poker MxBS 対応 | 中 | — |
+| PoW-WWI 設計更新 | 中 | — |
+| HP デモ | 低 | — |
+| `cargo publish` | 低 | — |
+
+---
+
+## 3. 開発フェーズ
+
+### Phase 1: コア実装 — ✅ 完了
+
+MxBS Rust crate の全 Rust API。
+
+- [x] Cell 構造体 + MxBSConfig
+- [x] SQLite スキーマ（cells + mxbs_meta）
+- [x] store / get / delete
+- [x] cosine_similarity（u8×16）
+- [x] search（ベクトル検索 + 忘却 + ACL + フィルタ）
+- [x] dream（buried_score）
+- [x] reinforce（w バイパス）
+- [x] inspire（近傍検索）
+- [x] update_group_bits / update_mode / update_meta（w チェック）
+- [x] set_features / get_unscored（遅延スコアリング）
+- [x] save_to / stats
+- [x] Preset + scoring_prompt + parse_scores
+- [x] AgentRegistry（store_public / store_private / search / dream）
+- [x] 34テスト全パス
+
+### Phase 2: 実地検証 — 🔜 次
+
+Hawaii 2035 を Rust MxBS で再走。Python ホスト（ctypes）から libmxbs.so を呼ぶ。
+
+- [ ] libmxbs.so ビルド（cdylib）
+- [ ] C bindings 実装（mxbs_spec.md §15 準拠）
+- [ ] Python ctypes ブリッジ（mxbs_lite.py の MemoryStore を差し替え）
+- [ ] Hawaii 2035 6ターン再走
+- [ ] パフォーマンス比較（Python vs Rust）
+- [ ] 不足機能の洗い出し → Phase 3 へ
+
+### Phase 3: デモタイトル対応
+
+Hawaii 再走で MxBS が安定したら、デモタイトルに展開。
+
+| タイトル | 内容 | MxBS 利用 |
+|---|---|---|
+| **Indian Poker** | AI娘とカードゲーム | GameState.memories → MxBS + AgentRegistry |
+| **PoW-WWI** | 第一次大戦前ヨーロッパ地政学シミュレーション | MxBS + Unity (C# P/Invoke) |
+| **MoM** | MinaideFox on MindFox ナラティブデモ | MxBS + Python ホスト |
+
+- [ ] Indian Poker MxBS 対応
+- [ ] PoW-WWI 設計更新（MxBS / JUWA 統合軸）
+- [ ] MoM 配線（libmxbs.so + ctypes）
+
+### Phase 4: 商用準備
+
+- [ ] preset_guide.md — GM 向けプリセット設計ガイド
+- [ ] API リファレンスドキュメント
+- [ ] サンプルプロジェクト（Rust / Python / C# の最小例）
+- [ ] ライセンス構造（MxBS standalone）
+- [ ] HP デモ（Hawaii 2035 動画 or インタラクティブ）
+- [ ] `cargo publish`
+
+---
+
+## 4. 廃止されたプロダクト
+
+| プロダクト | 廃止日 | 理由 | 後継 |
+|---|---|---|---|
+| xMBS Lite (Rust crate) | 2026-04-27 | bge-m3/ONNX/sqlite-vec 依存。16バイト因子ベクトルに置換 | MxBS |
+| MindFox (Rust crate) | 2026-04-28 | 過剰な抽象化。実態は for ループと文字列連結 | MxBS `pub mod agents` |
+| MxMindFox (Rust crate) | 2026-04-28 | 設計段階で不要と判断 | MxBS `pub mod agents` |
+| xMBS v0.6.0 (Python/FastAPI) | 2026-04-01 | Rust 再設計。AI館向けは継続運用 | xMBS Lite → MxBS |
+
+---
+
+## 5. 設計判断の記録
+
+### MxMindFox crate を作らない（2026-04-28）
+
+- **決定**: MxMindFox を別 crate にせず、MxBS 内の `pub mod agents` で代替
+- **理由**: mxmf_lite.py の精読で、オーケストレーション層の実態が for ループ + 文字列連結 + LLM 呼び出しだけだと判明。旧 MindFox の ActionContext / ResolutionContext / TurnEvents / Publication Phase は全て不要だった（YAGNI）
+- **根拠**: indian_poker.py の記憶は `list[str]` の末尾5件。この程度のゲームにも AgentRegistry がフィットする薄さが正解
+- **帰結**: ゲーム固有ロジック（プロンプト構築、ターンループ、LLM呼び出し）はホスト側の責務
+
+### is_public フィールドの廃止（2026-04-28）
+
+- **決定**: Cell 構造体から is_public を削除
+- **理由**: mode の other 権限（`0o744` で全員可読）と機能が重複。二重管理は矛盾の温床
+
+### 遅延スコアリング対応（2026-04-28）
+
+- **決定**: set_features / get_unscored API を追加。features は全ゼロ→非ゼロの一方向遷移
+- **理由**: LLM スコアリングはプアな GPU で数秒かかる。store() 時に features を省略し、Phase 2 で一括スコアリングするパターンが必要
+
+### パラダイムシフト: embedding → 因子ベクトル（2026-04-27）
+
+- **決定**: 1024次元 bge-m3 embedding を 16バイト因子ベクトルに置換
+- **理由**: ゲームNPCの記憶検索に汎用言語モデルの全次元は不要。GM が定義した「ゲームにとって意味のある軸」だけで十分
+- **帰結**: ONNX Runtime / bge-m3 / sqlite-vec の依存が全て消滅。SQLite のみ
+
+---
+
+## 6. 技術スタック（現行）
+
+| コンポーネント | 技術 |
+|---|---|
+| MxBS crate | Rust + rusqlite (bundled SQLite) + serde_json (Preset のみ) |
+| MxBS Lite | Python (開発ハーネス) |
+| MxMindFox Lite | Python (デモ・検証) |
+| LLM (ランタイム) | Ollama (gemma4:e2b〜26b) |
+| LLM (デザインタイム) | Claude Opus / GPT-4o |
+| 開発環境 | M4 Max Mac + Tailscale + ki9svr |
+
+---
+
+*Document history*
+
+| Date | Version | Author | Notes |
+|---|---|---|---|
+| 2026-04-28 | 1.0 | エルマー🦊 + マスター | 初版。xmbs_roadmap.md + mfx_roadmap.md を統合・刷新 |

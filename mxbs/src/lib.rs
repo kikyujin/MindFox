@@ -4,6 +4,12 @@
 //! Uses u8×16 factor vectors instead of language model embeddings.
 //! Only depends on SQLite.
 
+pub mod preset;
+pub mod agents;
+
+pub use preset::{Preset, Axis, parse_scores, default_scores};
+pub use agents::AgentRegistry;
+
 use rusqlite::Connection;
 
 pub const FACTOR_DIM: usize = 16;
@@ -161,6 +167,9 @@ pub enum MxBSError {
     PermissionDenied,
     AlreadyScored(u64),
     InvalidImportance(f32),
+    AgentNotFound(String),
+    TooManyAgents,
+    Io(String),
 }
 
 impl From<rusqlite::Error> for MxBSError {
@@ -175,6 +184,9 @@ impl std::fmt::Display for MxBSError {
             MxBSError::PermissionDenied => write!(f, "Permission denied"),
             MxBSError::AlreadyScored(id) => write!(f, "Cell already scored: {id}"),
             MxBSError::InvalidImportance(v) => write!(f, "Invalid importance value: {v}"),
+            MxBSError::AgentNotFound(id) => write!(f, "Agent not found: {id}"),
+            MxBSError::TooManyAgents => write!(f, "Too many agents (max 64)"),
+            MxBSError::Io(msg) => write!(f, "IO error: {msg}"),
         }
     }
 }
