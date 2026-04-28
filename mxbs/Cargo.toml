@@ -1,0 +1,13 @@
+[package]
+name = "mxbs"
+description = "Multitapps Extended Brain System — Factor-vector memory management for game NPCs"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[lib]
+crate-type = ["lib", "cdylib"]
+
+[dependencies]
+rusqlite = { workspace = true }
