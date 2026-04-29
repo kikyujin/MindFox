@@ -1,0 +1,23 @@
+{
+  "name": "pageone",
+  "version": "1.0",
+  "description": "ページワン忘却テスト用プリセット",
+  "axes": [
+    {"index": 0,  "name": "game_rule",     "low": "雑談",         "high": "ゲームルール"},
+    {"index": 1,  "name": "obligation",    "low": "任意",         "high": "義務・必須"},
+    {"index": 2,  "name": "timing",        "low": "いつでも",      "high": "特定タイミング"},
+    {"index": 3,  "name": "penalty",       "low": "ペナルティなし", "high": "ペナルティあり"},
+    {"index": 4,  "name": "social",        "low": "個人的",        "high": "全員に影響"},
+    {"index": 5,  "name": "excitement",    "low": "平静",         "high": "盛り上がり"},
+    {"index": 6,  "name": "card_state",    "low": "手札多い",      "high": "手札少ない"},
+    {"index": 7,  "name": "declaration",   "low": "黙って行動",    "high": "声に出す"},
+    {"index": 8,  "name": "risk",          "low": "安全",         "high": "危険"},
+    {"index": 9,  "name": "memory_load",   "low": "覚えやすい",    "high": "忘れやすい"},
+    {"index": 10, "name": "turn_impact",   "low": "影響なし",      "high": "ゲーム展開に影響"},
+    {"index": 11, "name": "frequency",     "low": "毎ターン",      "high": "稀に発生"},
+    {"index": 12, "name": "attention",     "low": "注意不要",      "high": "要注意"},
+    {"index": 13, "name": "cooperation",   "low": "敵対",         "high": "協力"},
+    {"index": 14, "name": "surprise",      "low": "予想通り",      "high": "予想外"},
+    {"index": 15, "name": "emotional",     "low": "理性的",        "high": "感情的"}
+  ]
+}
