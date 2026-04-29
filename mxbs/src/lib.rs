@@ -6,6 +6,7 @@
 
 pub mod preset;
 pub mod agents;
+pub mod ffi;
 
 pub use preset::{Preset, Axis, parse_scores, default_scores};
 pub use agents::AgentRegistry;
@@ -63,6 +64,7 @@ fn buried_score(price: u8, decay_val: f32, importance: f32) -> f32 {
 
 // ─── Cell ──────────────────────────────────────────────────
 
+#[derive(serde::Serialize)]
 pub struct Cell {
     pub id: u64,
     pub owner: u32,
@@ -106,6 +108,7 @@ impl Cell {
 
 // ─── Result Types ──────────────────────────────────────────
 
+#[derive(serde::Serialize)]
 pub struct SearchResult {
     pub id: u64,
     pub text: String,
@@ -120,6 +123,7 @@ pub struct SearchResult {
     pub meta: String,
 }
 
+#[derive(serde::Serialize)]
 pub struct DreamResult {
     pub id: u64,
     pub text: String,
@@ -134,6 +138,7 @@ pub struct DreamResult {
     pub meta: String,
 }
 
+#[derive(serde::Serialize)]
 pub struct InspireResult {
     pub id: u64,
     pub text: String,
@@ -144,6 +149,7 @@ pub struct InspireResult {
     pub meta: String,
 }
 
+#[derive(serde::Serialize)]
 pub struct UnscoredCell {
     pub id: u64,
     pub text: String,
@@ -152,6 +158,7 @@ pub struct UnscoredCell {
     pub meta: String,
 }
 
+#[derive(serde::Serialize)]
 pub struct Stats {
     pub total: u64,
     pub scored: u64,
@@ -195,6 +202,7 @@ impl std::error::Error for MxBSError {}
 
 // ─── Config ────────────────────────────────────────────────
 
+#[derive(serde::Deserialize)]
 pub struct MxBSConfig {
     pub half_life: u32,
 }

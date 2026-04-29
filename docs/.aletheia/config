@@ -5,10 +5,13 @@ files:
         version: md5:bcafbcb3bfb4c130197f636ef71461fe
     mxbs_roadmap.md:
         capsule: cap_70116e37
-        version: md5:b0b3db219b1041da94013fa7ea73209d
+        version: md5:00e13fa300fb0da34465e9695c5ee9d9
     mxbs_spec.md:
         capsule: cap_f0796766
         version: md5:a92be030c9b9756ec869d740156f0134
+    sengoku_report.md:
+        capsule: cap_1396e464
+        version: md5:5f0c20b8c7a3646777377c37207d8f59
 vw:
     group: MxBS
     tags:
