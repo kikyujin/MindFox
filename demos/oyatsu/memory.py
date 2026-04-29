@@ -135,9 +135,9 @@ def store_testimony(mxbs: MxBSBridge, char: Character, text: str,
 
 def store_night_plot(mxbs: MxBSBridge, text: str,
                      culprit_a: Character, culprit_b: Character,
-                     turn: int, target_name: str):
+                     turn: int, target_name: str) -> int:
     meta = {"type": "night_plot", "target": target_name}
-    mxbs.store(
+    cell_id = mxbs.store(
         owner=culprit_a.id, text=text,
         from_id=culprit_a.id, turn=turn,
         group_bits=culprit_a.bit | culprit_b.bit,
@@ -145,6 +145,7 @@ def store_night_plot(mxbs: MxBSBridge, text: str,
         features=EVENT_FEATURES["night_plot"],
         meta=json.dumps(meta),
     )
+    return cell_id
 
 
 def store_event(mxbs: MxBSBridge, text: str, event_type: str,
@@ -181,6 +182,26 @@ def store_personal_memory(mxbs: MxBSBridge, char: Character,
         features=[128]*16,
         meta=json.dumps(meta),
     )
+
+
+def get_night_plots(mxbs: MxBSBridge, game_turn_start: int, game_turn_end: int) -> list:
+    query = EVENT_FEATURES["night_plot"]
+    results = mxbs.search(
+        query_features=query,
+        viewer_id=SYSTEM_OWNER,
+        viewer_groups=0xFFFFFFFFFFFFFFFF,
+        current_turn=game_turn_end,
+        limit=20,
+    )
+    plots = []
+    for r in results:
+        meta = json.loads(r.get("meta", "{}"))
+        if meta.get("type") == "night_plot":
+            t = r.get("turn", 0)
+            if game_turn_start <= t <= game_turn_end:
+                plots.append(r)
+    plots.sort(key=lambda x: x.get("turn", 0))
+    return plots
 
 
 def get_memories_for_prompt(mxbs: MxBSBridge, char: Character,

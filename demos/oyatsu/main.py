@@ -1,4 +1,5 @@
 """AI館：おやつを食べたのは誰だ — メインエントリポイント"""
+import argparse
 import sys
 from pathlib import Path
 
@@ -13,17 +14,17 @@ from memory import store_event, store_personal_memory
 DB_PATH = str(Path(__file__).parent / "oyatsu.db")
 
 
-def campaign():
+def campaign(num_games: int = 3):
     mxbs = MxBSBridge(DB_PATH, half_life=8)
 
     print("=" * 60)
     print("  🍪 AI館：おやつを食べたのは誰だ")
-    print("  3ゲームキャンペーン")
+    print(f"  {num_games}ゲームキャンペーン")
     print("=" * 60)
 
     results = []
 
-    for game_id in range(1, 4):
+    for game_id in range(1, num_games + 1):
         turn_offset = (game_id - 1) * 100
 
         print(f"\n{'='*60}")
@@ -51,14 +52,14 @@ def campaign():
             store_personal_memory(mxbs, char, text, game_end_turn,
                                   price=150, game_id=game_id)
 
-        if game_id < 3:
+        if game_id < num_games:
             input("\n  [Enter] で次のゲームへ……")
 
     print(f"\n{'='*60}")
     print(f"  📊 キャンペーン結果")
     print(f"{'='*60}")
     wins = sum(1 for r in results if r.winner == "master")
-    print(f"  マスター: {wins}勝 {3-wins}敗")
+    print(f"  マスター: {wins}勝 {len(results)-wins}敗")
     for r in results:
         emoji = "🎉" if r.winner == "master" else "💀"
         culprit_names = " & ".join(c.name for c in r.culprits)
@@ -71,4 +72,7 @@ def campaign():
 
 
 if __name__ == "__main__":
-    campaign()
+    parser = argparse.ArgumentParser(description="AI館：おやつを食べたのは誰だ")
+    parser.add_argument("--games", type=int, default=3, help="キャンペーンのゲーム数 (default: 3)")
+    args = parser.parse_args()
+    campaign(num_games=args.games)

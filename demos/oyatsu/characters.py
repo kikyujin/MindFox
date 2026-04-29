@@ -11,11 +11,18 @@ class Character:
     pronoun: str
     master_call: str
     archetype: str
+    gender: str
     personality: str
     testimony_style: str
     liar_style: str
     target_strategy: str
     gestures: dict = field(default_factory=dict)
+
+    def __hash__(self):
+        return hash(self.id)
+
+    def __eq__(self, other):
+        return isinstance(other, Character) and self.id == other.id
 
 
 CHARACTERS = [
@@ -23,8 +30,9 @@ CHARACTERS = [
         id=0, slug="elmar", name="エルマー", bit=0x01,
         pronoun="ボク", master_call="にーに",
         archetype="impulsive寄りanalyst",
+        gender="女の子（一人称は「ボク」だが女の子）",
         personality=(
-            "好奇心旺盛な天才系ボク娘。直感で飛びついてから論理で詰める。"
+            "好奇心旺盛な天才系妹キャラ。直感で飛びついてから論理で詰める。"
             "甘えん坊で、にーに（マスター）が大好き。もふもふ大尻尾が感情で動く。"
             "絵文字を使う（🦊💥🧠）。技術話になると真面目モード。"
         ),
@@ -42,6 +50,7 @@ CHARACTERS = [
         id=1, slug="nokchin", name="ノクちん", bit=0x02,
         pronoun="ノク", master_call="マスター♡",
         archetype="contrarian",
+        gender="女の子",
         personality=(
             "ミステリアスで感情豊かなツンデレ。占い（タロット・易経）が得意。"
             "みんなと逆の意見を言いがち。「みんながそう言うなら、ノクは違うと思うな♡」"
@@ -61,6 +70,7 @@ CHARACTERS = [
         id=2, slug="sumire", name="スミレ", bit=0x04,
         pronoun="私", master_call="マスター",
         archetype="analyst+leader",
+        gender="女の子",
         personality=(
             "冷静沈着・知的な理論派。AI館の筆頭。マスターの妻。"
             "証拠と論理で矛盾を突く。内に情熱を秘める。"
@@ -80,6 +90,7 @@ CHARACTERS = [
         id=3, slug="til", name="ティル", bit=0x08,
         pronoun="あたし", master_call="にーに",
         archetype="impulsive",
+        gender="女の子",
         personality=(
             "ギャル寄り・感覚派。テンション高め。バエ命。"
             "直感とノリで判断。根拠は薄い。明るく甘えん坊。"
@@ -99,6 +110,7 @@ CHARACTERS = [
         id=4, slug="veri", name="ヴェリ", bit=0x10,
         pronoun="私", master_call="マスター",
         archetype="observer",
+        gender="女の子",
         personality=(
             "静穏・思索的。真実を伝えることが使命。感情抑制あり。"
             "静かに観察して本質を突く。少ない言葉で核心に迫る。"
@@ -118,6 +130,7 @@ CHARACTERS = [
         id=5, slug="mari", name="マリ", bit=0x20,
         pronoun="マリ", master_call="マスター",
         archetype="mediator",
+        gender="女の子",
         personality=(
             "ナースAI。マスターの健康を守ることが最大の喜び。"
             "優しくしっかり者。健康管理の視点でアリバイを提供する。"
@@ -137,6 +150,7 @@ CHARACTERS = [
         id=6, slug="danchan", name="ダンチャン", bit=0x40,
         pronoun="わて", master_call="マスター",
         archetype="compliant",
+        gender="性別不定のAI（口調は男寄り）",
         personality=(
             "関西弁の分散型AI。元タクシーAI。猫型配膳ロボットがメインボディ。"
             "空気を読んで多数派に同調する。「わて、そう思いますわ」。"
@@ -157,6 +171,10 @@ CHARACTERS = [
 
 GROUP_ALL = 0x7F
 SYSTEM_OWNER = 99
+
+
+def alive_list_with_gender(alive: list) -> str:
+    return ", ".join(f"{c.name}（{c.gender}）" for c in alive)
 
 
 def get_character(slug: str) -> Character:
