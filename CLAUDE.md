@@ -19,7 +19,14 @@ MxMindFox workspace — Rust crate for game NPC memory management using GM-defin
   - `llm.py` — Ollama prompt builders (testimony, night_plot, ending comments)
   - `engine.py` — Game loop (night/morning/testimony/accusation phases)
   - `main.py` — Campaign runner (`--games N`)
-- **docs/** — Design documents (mxbs_concept.md, mxbs_spec.md, oyatsu_spec.md). Authoritative for design decisions.
+- **demos/pageone/** — MxBS decay quantitative test. American Page One card game, LLM-zero (preset lines only). Tests price-based forgetting, reinforce chaining, half_life tuning.
+  - `cards.py` — Card/Deck (52 cards, shuffle, draw)
+  - `characters.py` — 6 characters with per-character price (70-220) and reinforce factor
+  - `lines.py` — Preset line dictionary (no LLM)
+  - `memory.py` — MxBS integration (rule injection, search, reinforce, callout)
+  - `engine.py` — Game loop (card play, special cards, pageone check, penalty)
+  - `main.py` — CLI entry (`--games N --half-life H --threshold T --seed S`)
+- **docs/** — Design documents (mxbs_concept.md, mxbs_spec.md, oyatsu_spec.md, pageone_spec.md). Authoritative for design decisions.
 
 ## Build & Test
 

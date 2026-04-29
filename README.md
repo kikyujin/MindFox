@@ -60,22 +60,35 @@ mxbs.save_to("save.db")?;
 ```
 mxmindfox-workspace/
 ├── mxbs/                  # MxBS crate
-│   └── src/
-│       ├── lib.rs         # Core: Cell, MxBS, search, dream, inspire
-│       ├── agents.rs      # AgentRegistry helper
-│       └── preset.rs      # Preset loading + scoring prompts
+│   ├── src/
+│   │   ├── lib.rs         # Core: Cell, MxBS, search, dream, inspire
+│   │   ├── agents.rs      # AgentRegistry helper
+│   │   ├── preset.rs      # Preset loading + scoring prompts
+│   │   └── ffi.rs         # C API (17 extern "C" functions)
+│   └── python/
+│       └── mxbs_bridge.py # Python ctypes wrapper for libmxbs
 ├── mxmindfox/             # Orchestration layer (planned)
 ├── docs/                  # Design documents
 │   ├── mxbs_concept.md    # Design philosophy
-│   └── mxbs_spec.md       # Full specification
+│   ├── mxbs_spec.md       # Full specification
+│   └── pageone_spec.md    # Page One demo spec (decay test)
 └── demos/
-    └── hawaii2035/        # Python Lite demo files
+    ├── oyatsu/            # Social deduction game (LLM: gemma4:26b)
+    └── pageone/           # Page One card game (LLM-zero, decay test)
 ```
+
+## Demos
+
+| Demo | LLM | Purpose |
+|------|-----|---------|
+| **oyatsu** | gemma4:26b | Social deduction with 7 AI characters, cross-game memory |
+| **pageone** | None | Decay quantitative test — price-based forgetting over 50+ games |
 
 ## Docs
 
 - [mxbs_concept.md](docs/mxbs_concept.md) — Why factor vectors instead of embeddings
 - [mxbs_spec.md](docs/mxbs_spec.md) — Full API specification
+- [pageone_spec.md](docs/pageone_spec.md) — Page One demo: decay test design
 
 ## License
 
