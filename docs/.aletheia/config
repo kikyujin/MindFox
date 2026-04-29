@@ -9,6 +9,9 @@ files:
     mxbs_spec.md:
         capsule: cap_f0796766
         version: md5:a92be030c9b9756ec869d740156f0134
+    oyatsu_spec.md:
+        capsule: cap_f40f854e
+        version: md5:1757dc9d1e27477532bc46698ffcb70f
     sengoku_report.md:
         capsule: cap_1396e464
         version: md5:5f0c20b8c7a3646777377c37207d8f59
