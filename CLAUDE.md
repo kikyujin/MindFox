@@ -13,7 +13,13 @@ MxMindFox workspace — Rust crate for game NPC memory management using GM-defin
   - `src/ffi.rs` — C API (17 extern "C" functions). See mxbs_spec.md §15
   - `python/mxbs_bridge.py` — Python ctypes wrapper for libmxbs
 - **mxmindfox crate** (`mxmindfox/`): Orchestration layer, currently a skeleton.
-- **docs/** — Design documents (mxbs_concept.md, mxbs_spec.md). Authoritative for design decisions.
+- **demos/oyatsu/** — "AI館おやつデモ": social deduction game (7 AI characters, Ollama gemma4:26b). Uses mxbs_bridge.py for cross-game memory, Mood system, diplomacy_toward.
+  - `characters.py` — Character dataclass (gender field, archetype-based target scoring)
+  - `memory.py` — MxBS integration (Mood, diplomacy, store helpers)
+  - `llm.py` — Ollama prompt builders (testimony, night_plot, ending comments)
+  - `engine.py` — Game loop (night/morning/testimony/accusation phases)
+  - `main.py` — Campaign runner (`--games N`)
+- **docs/** — Design documents (mxbs_concept.md, mxbs_spec.md, oyatsu_spec.md). Authoritative for design decisions.
 
 ## Build & Test
 
