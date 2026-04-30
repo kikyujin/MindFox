@@ -71,8 +71,10 @@ mxmindfox-workspace/
 ├── docs/                  # Design documents
 │   ├── mxbs_concept.md    # Design philosophy
 │   ├── mxbs_spec.md       # Full specification
-│   └── pageone_spec.md    # Page One demo spec (decay test)
+│   ├── pageone_spec.md    # Page One demo spec (decay test)
+│   └── sengoku_report.md  # Sengoku SIM technical report
 └── demos/
+    ├── sengoku/           # Sengoku SIM (Rust direct, rule-based scoring)
     ├── oyatsu/            # Social deduction game (LLM: gemma4:26b)
     └── pageone/           # Page One card game (LLM-zero, decay test)
 ```
@@ -81,6 +83,7 @@ mxmindfox-workspace/
 
 | Demo | LLM | Purpose |
 |------|-----|---------|
+| **sengoku** | gemma4:e2b | Sengoku warlord SIM — Rust direct, rule-based scoring, morale patch |
 | **oyatsu** | gemma4:26b | Social deduction with 7 AI characters, cross-game memory |
 | **pageone** | None | Decay quantitative test — price-based forgetting over 50+ games |
 
@@ -88,6 +91,7 @@ mxmindfox-workspace/
 
 - [mxbs_concept.md](docs/mxbs_concept.md) — Why factor vectors instead of embeddings
 - [mxbs_spec.md](docs/mxbs_spec.md) — Full API specification
+- [sengoku_report.md](docs/sengoku_report.md) — Sengoku SIM technical report
 - [pageone_spec.md](docs/pageone_spec.md) — Page One demo: decay test design
 
 ## License
