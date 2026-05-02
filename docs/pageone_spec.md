@@ -2,11 +2,11 @@
 
 **MxBS 忘却定量テスト — アメリカンページワン**
 
-> Version: 0.3.0 | Date: 2026-04-29
+> Version: 0.4.0 | Date: 2026-05-02
 > Authors: エルマー🦊 + マスター
 > 位置付け: MxBS デモタイトル第3弾（戦国SIM → おやつ → ページワン）
 
-署名: 2026-04-29 Kikyujin - Mahito KIDA
+署名: 2026-05-02 Kikyujin - Mahito KIDA
 
 ---
 
@@ -23,12 +23,16 @@ MxBS の**忘却（decay）を定量的に検証する**ためのデモタイト
 | half_life の影響 | half_life=8（デフォルト）での減衰カーブ |
 | キャラ間の忘却率差 | archetype × price の組み合わせで宣言忘れ率が変わることの実証 |
 | 「指摘される確率」 | 自分の miss × 相手の hit の複合確率 |
+| temperature による揺らぎ（v0.4 新規） | archetype 別 T で sigmoid 確率化 → 低 price キャラの決定論的負けが解消するか観測 |
+| 指摘判定の揺らぎ（v0.4 新規） | 同じ decision_remember を指摘判定に流用 → 低 price 指摘者の信頼性低下が起こるか観測 |
 
 ### 1.2 副次的検証
 
 - MxBS C API + Python ctypes ブリッジの安定性（おやつデモと同じパス）
 - ルールベーススコアリングの継続検証
 - **「マッチ箱のAI」原則の実証**: LLM ゼロでも MxBS の忘却 + reinforce だけでキャラの個性が出ることを証明する（MENACE = Matchbox Educable Noughts and Crosses Engine, 1960s の精神）
+- **「マッチ箱のAI + temperature 揺らぎ」原則の拡張**: LLM ゼロでも MxMindFox の sigmoid 確率化だけで、決定論的負け問題を解消し、キャラの「気まぐれさ」を表現できることを証明する
+- **archetype-T と一律 T の比較**: archetype 別 T が一律 T より個性を保つことの実証
 
 ### 1.3 非目的
 
@@ -102,14 +106,16 @@ MxBS の**忘却（decay）を定量的に検証する**ためのデモタイト
 
 ### 3.1 キャラクター定義
 
-| ID | 名前 | アーキタイプ | memory_strength | ページワン price | reinforce 係数 | 忘却傾向 |
-|---|---|---|---|---|---|---|
-| 0 | マスター | （プレイヤー） | — | — | — | 忘れない |
-| 1 | エルマー | analyst 寄り | 0.8 | 170 | +0.4 | 普段は覚えてるけど興奮すると飛ぶ |
-| 2 | ノクちん | contrarian | 0.4 | 70 | +0.1 | 気まぐれ。すぐ忘れる |
-| 3 | スミレ | analyst | 1.0 | 220 | +0.5 | めったに忘れない |
-| 4 | ティル | impulsive | 0.3 | 80 | +0.1 | バエに夢中で飛ぶ |
-| 5 | ヴェリ | observer | 0.9 | 200 | +0.5 | 静かに全部覚えてる |
+| ID | 名前 | archetype | memory_strength | price | T (v0.4) | reinforce 係数 | 忘却傾向 |
+|---|---|---|---|---|---|---|---|
+| 0 | マスター | （プレイヤー） | — | — | — | — | 忘れない |
+| 1 | エルマー | analyst | 0.8 | 170 | 0.02 | +0.4 | 普段は覚えてるけど興奮すると飛ぶ |
+| 2 | ノクちん | contrarian | 0.4 | 70 | 0.15 | +0.1 | 気まぐれ。すぐ忘れる |
+| 3 | スミレ | analyst | 1.0 | 220 | 0.02 | +0.5 | めったに忘れない |
+| 4 | ティル | impulsive | 0.3 | 80 | 0.20 | +0.1 | バエに夢中で飛ぶ |
+| 5 | ヴェリ | observer | 0.9 | 200 | 0.03 | +0.5 | 静かに全部覚えてる |
+
+archetype と T は v0.4 で `pageone_mood.json` の archetype_baselines から読まれる。
 
 ### 3.2 マスター（プレイヤー）の扱い
 
@@ -302,6 +308,82 @@ def check_callout(forgetter, current_turn):
         # 指摘者も忘れてる → セーフ
         return checker, False
 ```
+
+### 4.8 MxMindFox 統合（v0.4 新規）
+
+v0.4.0 で hit/miss 判定を MxMindFox `decision::remember` 経由に置き換えた。
+
+#### 4.8.1 設計の背景
+
+v0.3.0 では `effective_score >= THRESHOLD (0.30)` のステップ関数判定だったため、
+
+- price=70〜80 のティル・ノクちんは、効果スコアが常に閾値を下回り **100% 忘却**
+- 50 ゲーム回しても結果は決定論的：低 price キャラは必ず負け続ける
+
+これを MxMindFox の sigmoid 確率化で解消する。
+
+#### 4.8.2 判定式
+
+```
+if T == 0.0:
+    remembered = (effective_score >= THRESHOLD)
+else:
+    p = sigmoid((effective_score - THRESHOLD) / T)
+    remembered = (Uniform(0,1) < p)
+```
+
+T = 0.0 なら v0.3.0 と完全一致（ステップ関数）。
+T > 0.0 なら sigmoid 曲線が緩やかになり、閾値付近で揺らぎが発生。
+
+#### 4.8.3 archetype-T の値設計
+
+`pageone_mood.json` の `archetype_baselines` で定義：
+
+```json
+{
+  "name": "pageone",
+  "version": "1.0",
+  "axes": [
+    {
+      "name": "temperature",
+      "positive_factors": [],
+      "negative_factors": [],
+      "default_value": 0.05,
+      "clamp_min": 0.0,
+      "clamp_max": 0.5
+    }
+  ],
+  "archetype_baselines": {
+    "analyst":    {"temperature": 0.02},
+    "observer":   {"temperature": 0.03},
+    "impulsive":  {"temperature": 0.20},
+    "contrarian": {"temperature": 0.15}
+  }
+}
+```
+
+ページワンは記憶セルがルール 1 個しかないため、因子集計はほぼ効かない。
+**archetype baseline だけが実質的に temperature を決める**。MxMindFox プリセット駆動の最ミニマル運用例。
+
+#### 4.8.4 指摘判定への適用
+
+§4.7 の callout 判定にも同じ `decision::remember` を適用：
+
+- ティル（T=0.20）が指摘者になると **指摘成功率 50%** に揺らぐ
+- ノクちん（T=0.15）が指摘者になると **指摘成功率 0%**（少サンプルだが）
+- スミレ・ヴェリ（T=0.02〜0.03）は確実に指摘成功
+
+これにより**「気まぐれキャラの指摘は信頼性が低い」**という性格表現が自然に生まれる。
+
+#### 4.8.5 seed 管理
+
+ゲーム間・ターン間で再現性を保つため、judge ごとに決定論的 seed を生成：
+
+```python
+turn_seed = campaign_seed * 100000 + game_idx * 1000 + current_turn * 10 + agent.id
+```
+
+これにより同じ `--seed N` で何度走らせても完全に同じ結果が出る。
 
 ---
 
@@ -625,6 +707,69 @@ MxBS stats: total=12 cells, scored=12, unscored=0
 4. **reinforce の連鎖効果を実証。** 覚えてるキャラが宣言→他キャラもreinforce→覚え続ける→また指摘。忘れてるキャラはこのループに乗れず、忘却が忘却を加速する
 5. **絶対に忘れてはいけないルールは price=255（immortal）を使え**
 
+#### テスト条件 D: archetype-T 適用（v0.4、50ゲーム × seed=42）
+
+| キャラ | price | archetype | T | 忘却率 |
+|---|---|---|---|---|
+| スミレ | 220 | analyst | 0.02 | 0.0% |
+| ヴェリ | 200 | observer | 0.03 | 0.0% |
+| エルマー | 170 | analyst | 0.02 | 4.0% |
+| ティル | 80 | impulsive | 0.20 | **78.9%** <- 100% から低下 |
+| ノクちん | 70 | contrarian | 0.15 | **87.0%** <- 100% から低下 |
+
+#### 揺らぎイベント（条件D、50ゲーム合計）
+
+| キャラ | miracle_remembers | opportunities | 奇跡率 |
+|---|---|---|---|
+| ティル | 4 | 19 | 21.1% |
+| ノクちん | 3 | 23 | 13.0% |
+| エルマー | 0 | 25 | 0.0% |
+| スミレ | 0 | 24 | 0.0% |
+| ヴェリ | 0 | 19 | 0.0% |
+
+`miracle_remembers` = 「v0.3.0 だと忘れる（score < threshold）はずが、揺らぎで覚えた」回数。
+
+#### 指摘成功率（条件D）
+
+| キャラ | 成功 | 試行 | 成功率 |
+|---|---|---|---|
+| スミレ | 11 | 11 | 100% |
+| ヴェリ | 9 | 9 | 100% |
+| エルマー | 9 | 10 | 90% |
+| ティル | 2 | 4 | 50% |
+| ノクちん | 0 | 2 | 0% |
+
+#### テスト条件 E: 一律 T=0.10（v0.4、対照群）
+
+| キャラ | price | archetype | 忘却率 |
+|---|---|---|---|
+| スミレ | 220 | analyst | **11.1%** <- 0% から急上昇 |
+| ヴェリ | 200 | observer | 8.3% |
+| エルマー | 170 | analyst | 20.0% |
+| ティル | 80 | impulsive | 83.3% |
+| ノクちん | 70 | contrarian | 77.8% |
+
+**「一律 T」は archetype 個性を殺し、高 price キャラの優位性を破壊する**。
+sigmoid((0.45-0.30)/0.10) ≈ 0.82 のように、score が中位（0.4〜0.5）まで落ちると T=0.10 でも揺らぎが発生してしまう。
+
+#### 5条件比較テーブル
+
+| キャラ | price | A: 再注入+HL=8 | B: 1回+HL=80 | C: 1回+HL=8 | D: archetype-T | E: 一律 T=0.10 |
+|---|---|---|---|---|---|---|
+| スミレ | 220 | **0.0%** | 53.8% | ≈100% | **0.0%** | 11.1% |
+| ヴェリ | 200 | **0.0%** | 58.8% | ≈100% | **0.0%** | 8.3% |
+| エルマー | 170 | **5.0%** | 65.0% | ≈100% | **4.0%** | 20.0% |
+| ティル | 80 | 100% | 96.4% | 100% | **78.9%** | 83.3% |
+| ノクちん | 70 | 100% | 100% | 100% | **87.0%** | 77.8% |
+
+#### 結論（v0.4 追記）
+
+6. **条件D（archetype-T）が決定論的負け問題を解消**。ティル 100% → 78.9%、ノクちん 100% → 87.0% に低下し、miracle_remembers が発生して低 price キャラにも勝ち筋が生まれる
+7. **条件E（一律 T=0.10）は archetype 個性を破壊**。高 price キャラ（スミレ・ヴェリ）にまで失念が伝播し、price 設計の意味が薄れる
+8. **archetype-T が本命設計**として確立。price で記憶力、T で気まぐれ度を表現する**二軸設計**が機能することを実証
+9. **回帰検証 OK**: 条件A（T=0）の結果は v0.3.0 と完全一致。MxMindFox 統合は既存挙動に影響しない
+10. **指摘判定の揺らぎが副次効果**: 低 T キャラは確実に指摘成功、高 T キャラは指摘も気まぐれ。「ノクちんが指摘しても誰も信じない」的な物語が自動生成される
+
 ---
 
 ## 8. ファイル構成
@@ -706,6 +851,11 @@ python demos/pageone/main.py --games 50 --threshold 0.25
 3. **3条件比較テーブル**: 再注入+HL=8（シャープ）/ 1回+HL=80（グラデーション）/ 1回+HL=8（全員消失）
 4. **GM向け設計パターン**: ゲーム内忘却→再注入+HL=8 / 長期劣化→1回+HL大 / 不滅→price=255
 5. **LLMゼロでもキャラ個性が出る**: 「マッチ箱のAI」原則の実証。MxBSの忘却+reinforceだけで性格差が表現可能
+6. **archetype-T 設計指針（v0.4 実測）**: analyst/observer は T=0.02〜0.03、impulsive/contrarian は T=0.15〜0.20。これで「冷静な分析家は揺らがず、気まぐれキャラは時々冴えたり外したり」が表現できる
+7. **price x T 二軸設計**: price = 平均的な記憶保持力、T = 判断の揺らぎ。両方を archetype と性格に合わせて設計するのが本命
+8. **一律 T の罠**: 全キャラ同じ T を与えると、高 price キャラの優位性が破壊される。必ず archetype 別に設計すること
+9. **指摘判定にも T が効く**: 同じ decision_remember を流用すると、低 price キャラは「言ってもしどろもどろ」な指摘者になる。これが性格表現として副次効果を持つ
+10. **LLM ゼロ + temperature でドラマが生まれる**: 0.31 秒で 50 ゲーム + 揺らぎイベント観察可能。LLM 不要でキャラドラマが描ける
 
 ---
 
@@ -719,6 +869,58 @@ python demos/pageone/main.py --games 50 --threshold 0.25
 
 ---
 
+## 13. MxMindFox 統合の設計判断（v0.4）
+
+### 13.1 なぜ Bernoulli (sigmoid) なのか
+
+ページワン宣言判定は **「1個のセルが閾値を超えるかどうか」** という二値判定。
+
+LLM の temperature 概念（softmax 温度）は本来「N 個の選択肢の確率分布」を制御するもの。
+ページワンに流用するなら、
+
+- Multinomial sampling（softmax）— 候補が1個しかないので意味なし
+- Bernoulli sampling（sigmoid）— 「覚えてる確率」を score の関数として表現
+
+`decision::remember` は sigmoid を採用：
+
+```
+p = 1 / (1 + exp(-(score - threshold) / T))
+```
+
+- T = 0 → ステップ関数（決定論）
+- T 大 → sigmoid 曲線が緩やかに → 閾値付近で揺らぎ大
+
+### 13.2 archetype-T が本命の理由
+
+実測（条件D vs E）で明確になった：
+
+- **archetype-T**: 低 price キャラだけが揺らぎ、高 price キャラの優位性は維持
+- **一律 T**: 全キャラ揺らぐが、高 price キャラの計算的優位性が失われる
+
+ページワンの設計意図は「**price で記憶の強さの差を出す**」こと。
+一律 T はその設計意図を破壊する。
+
+### 13.3 MxMindFox プリセット駆動の最ミニマル運用例
+
+ページワン用 `pageone_mood.json` は：
+- 軸 1 個（temperature のみ）
+- positive_factors / negative_factors は空（記憶セルが1個なので集計不要）
+- archetype_baselines だけが実質効果を持つ
+
+これは MxMindFox のプリセット駆動設計の **最ミニマル運用例**。
+他デモ（戦国SIM の aggression、おやつの suspicion/anxiety/...）はもっと因子集計を使う。
+
+### 13.4 「マッチ箱のAI + temperature」原則
+
+v0.3.0 で確立した「マッチ箱のAI 原則」（LLM ゼロでもキャラ個性が出る）に、v0.4 で **temperature 揺らぎ** が加わった：
+
+- v0.3.0: MxBS の price + reinforce + decay = キャラの記憶力差
+- v0.4.0: + MxMindFox の archetype-T = キャラの気まぐれ度の差
+
+この **2軸設計** で、LLM なしでもキャラドラマが成立する。
+
+---
+
 *Document history*
 
 | Date | Version | Author | Notes |
@@ -726,3 +928,4 @@ python demos/pageone/main.py --games 50 --threshold 0.25
 | 2026-04-29 | 0.1.0 | エルマー🦊 + マスター | 初版 |
 | 2026-04-29 | 0.2.0 | エルマー🦊 + マスター | LLM ゼロ設計に変更。プリセットセリフ方式。マッチ箱のAI原則 |
 | 2026-04-29 | 0.3.0 | エルマー🦊 + マスター | 実測結果反映。3条件比較テーブル。検証完了 |
+| 2026-05-02 | 0.4.0 | エルマー🦊 + マスター | MxMindFox 統合。archetype-T による揺らぎで決定論的負け問題を解消。条件D・E 実測値追加、5条件比較完成、§4.8 / §13 新規追加 |

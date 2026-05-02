@@ -1,0 +1,89 @@
+{
+  "version": "0.4.0",
+  "condition": "A",
+  "temperature_mode": "zero",
+  "reinject": true,
+  "seed": 42,
+  "num_games": 50,
+  "total_turns": 419,
+  "elapsed_seconds": 0.28,
+  "by_character": {
+    "エルマー": {
+      "price": 170,
+      "archetype": "analyst",
+      "T": 0.0,
+      "forget_rate": 0.05,
+      "miracle_remembers": 0,
+      "total_pageone_events": 20,
+      "forgot": 1,
+      "opportunities": 20
+    },
+    "ノクちん": {
+      "price": 70,
+      "archetype": "contrarian",
+      "T": 0.0,
+      "forget_rate": 1.0,
+      "miracle_remembers": 0,
+      "total_pageone_events": 25,
+      "forgot": 25,
+      "opportunities": 25
+    },
+    "スミレ": {
+      "price": 220,
+      "archetype": "analyst",
+      "T": 0.0,
+      "forget_rate": 0.0,
+      "miracle_remembers": 0,
+      "total_pageone_events": 20,
+      "forgot": 0,
+      "opportunities": 20
+    },
+    "ティル": {
+      "price": 80,
+      "archetype": "impulsive",
+      "T": 0.0,
+      "forget_rate": 1.0,
+      "miracle_remembers": 0,
+      "total_pageone_events": 20,
+      "forgot": 20,
+      "opportunities": 20
+    },
+    "ヴェリ": {
+      "price": 200,
+      "archetype": "observer",
+      "T": 0.0,
+      "forget_rate": 0.0,
+      "miracle_remembers": 0,
+      "total_pageone_events": 14,
+      "forgot": 0,
+      "opportunities": 14
+    }
+  },
+  "callout_stats": {
+    "エルマー": {
+      "successes": 11,
+      "attempts": 11,
+      "rate": 1.0
+    },
+    "ノクちん": {
+      "successes": 0,
+      "attempts": 5,
+      "rate": 0.0
+    },
+    "スミレ": {
+      "successes": 8,
+      "attempts": 8,
+      "rate": 1.0
+    },
+    "ティル": {
+      "successes": 0,
+      "attempts": 7,
+      "rate": 0.0
+    },
+    "ヴェリ": {
+      "successes": 15,
+      "attempts": 15,
+      "rate": 1.0
+    }
+  }
+}

@@ -7,7 +7,7 @@ from characters import Character, AI_CHARACTERS
 from lines import pick_start_line, pick_line
 from memory import (
     check_pageone, do_reinforce, check_callout, get_score_snapshot,
-    THRESHOLD,
+    THRESHOLD, sigmoid_p,
 )
 
 
@@ -17,8 +17,13 @@ class PageoneEvent:
     agent: str
     action: str  # "declared" | "forgot_called" | "forgot_safe"
     score: float
+    temperature: float = 0.0
+    probability: float = 0.0
     checker: str | None = None
     checker_score: float | None = None
+    checker_temperature: float = 0.0
+    checker_probability: float = 0.0
+    is_miracle: bool = False
 
 
 @dataclass
@@ -95,7 +100,9 @@ def advance_player(gs: GameState, skip: int = 1):
 
 
 def run_game(mxbs, characters: list[Character], global_turn: int,
-             prev_losers: list[Character] | None = None) -> tuple[GameResult, int]:
+             prev_losers: list[Character] | None = None,
+             campaign_seed: int = 42, game_idx: int = 0,
+             temperature_override: float | None = None) -> tuple[GameResult, int]:
     gs = GameState(characters)
     result = GameResult(winner=None, reason="", turns=0)
 
@@ -200,7 +207,8 @@ def run_game(mxbs, characters: list[Character], global_turn: int,
 
                 # ページワンチェック（残り1枚）
                 if len(ps.hand) == 1:
-                    _handle_pageone(mxbs, gs, ps, characters, global_turn, round_num, result)
+                    _handle_pageone(mxbs, gs, ps, characters, global_turn, round_num, result,
+                                    campaign_seed, game_idx, temperature_override)
 
                 # スキップ処理
                 if card.rank == 11:
@@ -235,7 +243,8 @@ def run_game(mxbs, characters: list[Character], global_turn: int,
                         print(f"  {player_name}: 引き → {drawn.display()} → 出し")
 
                     if len(ps.hand) == 1:
-                        _handle_pageone(mxbs, gs, ps, characters, global_turn, round_num, result)
+                        _handle_pageone(mxbs, gs, ps, characters, global_turn, round_num, result,
+                                        campaign_seed, game_idx, temperature_override)
 
                     if drawn.rank == 11:
                         advance_player(gs)
@@ -277,7 +286,9 @@ def run_game(mxbs, characters: list[Character], global_turn: int,
 
 def _handle_pageone(mxbs, gs: GameState, ps: PlayerState,
                     characters: list[Character], global_turn: int,
-                    round_num: int, result: GameResult):
+                    round_num: int, result: GameResult,
+                    campaign_seed: int = 42, game_idx: int = 0,
+                    temperature_override: float | None = None):
     player_name = ps.char.name
     print(f"    📋 残り1枚！")
 
@@ -289,28 +300,37 @@ def _handle_pageone(mxbs, gs: GameState, ps: PlayerState,
         result.pageone_events.append(event)
         return
 
-    hit, score = check_pageone(mxbs, ps.char.id, ps.char.bit, global_turn)
+    turn_seed = campaign_seed * 100000 + game_idx * 1000 + global_turn * 10 + ps.char.id
+    remembered, score, temperature, prob = check_pageone(
+        mxbs, ps.char, global_turn, turn_seed, temperature_override,
+    )
 
-    if hit:
+    deterministic_hit = score >= THRESHOLD
+    is_miracle = remembered and not deterministic_hit
+
+    if remembered:
         line = pick_line(player_name, "pageone")
-        print(f"    📋 ページワン検索: score={score:.2f} >= {THRESHOLD:.2f} → ✅ 宣言！")
+        miracle_tag = " (miracle!)" if is_miracle else ""
+        print(f"    📋 ページワン検索: score={score:.2f}, T={temperature:.2f} → p={prob:.2f} → ✅ 宣言！{miracle_tag}")
         print(f"    {player_name}: {line}")
-        event = PageoneEvent(round_num, player_name, "declared", score)
+        event = PageoneEvent(round_num, player_name, "declared", score,
+                             temperature, prob, is_miracle=is_miracle)
         result.pageone_events.append(event)
         do_reinforce(mxbs, characters, ps.char.id, global_turn)
     else:
         forgot_line = pick_line(player_name, "forgot")
-        print(f"    📋 ページワン検索: score={score:.2f} < {THRESHOLD:.2f} → ❌ 忘れた！")
+        print(f"    📋 ページワン検索: score={score:.2f}, T={temperature:.2f} → p={prob:.2f} → ❌ 忘れた！")
         print(f"    {player_name}: {forgot_line}")
 
-        checker_name, called, checker_score = check_callout(
-            mxbs, ps.char.id, characters, global_turn
+        callout_seed = turn_seed + 100
+        checker_name, called, checker_score, checker_temp, checker_prob = check_callout(
+            mxbs, ps.char.id, characters, global_turn, callout_seed, temperature_override,
         )
 
         if called:
             callout_line = pick_line(checker_name, "callout", target=player_name)
             called_out_line = pick_line(player_name, "called_out")
-            print(f"    👀 指摘チェック: {checker_name} → score={checker_score:.2f} → 指摘！")
+            print(f"    👀 指摘チェック: {checker_name} → score={checker_score:.2f}, T={checker_temp:.2f} → p={checker_prob:.2f} → 指摘！")
             print(f"    {checker_name}: {callout_line}")
             print(f"    {player_name}: {called_out_line}")
 
@@ -319,13 +339,17 @@ def _handle_pageone(mxbs, gs: GameState, ps: PlayerState,
             print(f"    💀 ペナルティ: {player_name} {len(drawn)}枚ドロー（残り{len(ps.hand)}枚）")
 
             event = PageoneEvent(round_num, player_name, "forgot_called", score,
-                                 checker_name, checker_score)
+                                 temperature, prob,
+                                 checker_name, checker_score,
+                                 checker_temp, checker_prob)
         else:
             safe_line = pick_line(player_name, "safe")
-            print(f"    👀 指摘チェック: {checker_name} → score={checker_score:.2f} → 指摘失敗")
+            print(f"    👀 指摘チェック: {checker_name} → score={checker_score:.2f}, T={checker_temp:.2f} → p={checker_prob:.2f} → 指摘失敗")
             print(f"    {player_name}: {safe_line}")
             event = PageoneEvent(round_num, player_name, "forgot_safe", score,
-                                 checker_name, checker_score)
+                                 temperature, prob,
+                                 checker_name, checker_score,
+                                 checker_temp, checker_prob)
 
         result.pageone_events.append(event)
 
