@@ -64,7 +64,7 @@ fn buried_score(price: u8, decay_val: f32, importance: f32) -> f32 {
 
 // ─── Cell ──────────────────────────────────────────────────
 
-#[derive(serde::Serialize)]
+#[derive(serde::Serialize, serde::Deserialize)]
 pub struct Cell {
     pub id: u64,
     pub owner: u32,
@@ -557,10 +557,10 @@ impl<'a> SearchBuilder<'a> {
             if !MxBS::check_read(cell, self.viewer_id, self.viewer_groups) {
                 continue;
             }
-            if let Some(o) = self.filter_owner { if cell.owner != o { continue; } }
-            if let Some(f) = self.filter_from { if cell.from != f { continue; } }
-            if let Some(t) = self.after_turn { if cell.turn < t { continue; } }
-            if let Some(t) = self.before_turn { if cell.turn > t { continue; } }
+            if let Some(o) = self.filter_owner && cell.owner != o { continue; }
+            if let Some(f) = self.filter_from && cell.from != f { continue; }
+            if let Some(t) = self.after_turn && cell.turn < t { continue; }
+            if let Some(t) = self.before_turn && cell.turn > t { continue; }
 
             let delta = self.current_turn.saturating_sub(cell.turn);
             let d = if cell.price == PRICE_IMMORTAL { 1.0 }
@@ -668,9 +668,8 @@ impl<'a> InspireBuilder<'a> {
         for cell in &cells {
             if cell.id == self.cell_id { continue; }
             if cell.features == [0u8; FACTOR_DIM] { continue; }
-            if let Some(vid) = self.viewer_id {
-                if !MxBS::check_read(cell, vid, self.viewer_groups) { continue; }
-            }
+            if let Some(vid) = self.viewer_id
+                && !MxBS::check_read(cell, vid, self.viewer_groups) { continue; }
 
             let cos = cosine_similarity(&source.features, &cell.features);
             results.push(InspireResult {

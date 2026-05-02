@@ -34,8 +34,8 @@ unsafe fn features_from_ptr(p: *const u8) -> [u8; 16] {
     }
 }
 
-// ---------- Lifecycle ----------
-
+/// # Safety
+/// `db_path` must be a valid C string. `config_json` may be null.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn mxbs_open(
     db_path: *const c_char,
@@ -57,6 +57,8 @@ pub unsafe extern "C" fn mxbs_open(
     }
 }
 
+/// # Safety
+/// `handle` must be a pointer returned by `mxbs_open` or null.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn mxbs_close(handle: *mut MxBSHandle) {
     if !handle.is_null() {
@@ -64,8 +66,9 @@ pub unsafe extern "C" fn mxbs_close(handle: *mut MxBSHandle) {
     }
 }
 
-// ---------- Store ----------
-
+/// # Safety
+/// `h` must be a valid handle. `features` must point to 16 bytes or be null.
+/// `text` and `meta` must be valid C strings or null.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn mxbs_store(
     h: *mut MxBSHandle,
@@ -108,8 +111,8 @@ pub unsafe extern "C" fn mxbs_store(
     result.unwrap_or(0)
 }
 
-// ---------- Deferred Scoring ----------
-
+/// # Safety
+/// `h` must be a valid handle or null.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn mxbs_get_unscored(h: *mut MxBSHandle) -> *const c_char {
     if h.is_null() {
@@ -123,6 +126,8 @@ pub unsafe extern "C" fn mxbs_get_unscored(h: *mut MxBSHandle) -> *const c_char 
     result.unwrap_or(ptr::null())
 }
 
+/// # Safety
+/// `h` must be a valid handle. `features` must point to 16 bytes or be null.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn mxbs_set_features(
     h: *mut MxBSHandle,
@@ -143,8 +148,8 @@ pub unsafe extern "C" fn mxbs_set_features(
     result.unwrap_or(0)
 }
 
-// ---------- Search ----------
-
+/// # Safety
+/// `h` must be a valid handle. `query_features` must point to 16 bytes or be null.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn mxbs_search(
     h: *mut MxBSHandle,
@@ -171,8 +176,8 @@ pub unsafe extern "C" fn mxbs_search(
     result.unwrap_or(ptr::null())
 }
 
-// ---------- Dream ----------
-
+/// # Safety
+/// `h` must be a valid handle or null.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn mxbs_dream(
     h: *mut MxBSHandle,
@@ -197,8 +202,8 @@ pub unsafe extern "C" fn mxbs_dream(
     result.unwrap_or(ptr::null())
 }
 
-// ---------- Inspire ----------
-
+/// # Safety
+/// `h` must be a valid handle or null.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn mxbs_inspire(
     h: *mut MxBSHandle,
@@ -223,8 +228,8 @@ pub unsafe extern "C" fn mxbs_inspire(
     result.unwrap_or(ptr::null())
 }
 
-// ---------- Reinforce ----------
-
+/// # Safety
+/// `h` must be a valid handle or null.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn mxbs_reinforce(
     h: *mut MxBSHandle,
@@ -244,8 +249,8 @@ pub unsafe extern "C" fn mxbs_reinforce(
     result.unwrap_or(0)
 }
 
-// ---------- Field Updates ----------
-
+/// # Safety
+/// `h` must be a valid handle or null.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn mxbs_update_group_bits(
     h: *mut MxBSHandle,
@@ -267,6 +272,8 @@ pub unsafe extern "C" fn mxbs_update_group_bits(
     result.unwrap_or(0)
 }
 
+/// # Safety
+/// `h` must be a valid handle or null.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn mxbs_update_mode(
     h: *mut MxBSHandle,
@@ -288,6 +295,8 @@ pub unsafe extern "C" fn mxbs_update_mode(
     result.unwrap_or(0)
 }
 
+/// # Safety
+/// `h` must be a valid handle. `new_meta` must be a valid C string or null.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn mxbs_update_meta(
     h: *mut MxBSHandle,
@@ -310,8 +319,8 @@ pub unsafe extern "C" fn mxbs_update_meta(
     result.unwrap_or(0)
 }
 
-// ---------- Get / Delete ----------
-
+/// # Safety
+/// `h` must be a valid handle or null.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn mxbs_get(h: *mut MxBSHandle, cell_id: u64) -> *const c_char {
     if h.is_null() {
@@ -327,6 +336,8 @@ pub unsafe extern "C" fn mxbs_get(h: *mut MxBSHandle, cell_id: u64) -> *const c_
     result.unwrap_or(ptr::null())
 }
 
+/// # Safety
+/// `h` must be a valid handle or null.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn mxbs_delete(
     h: *mut MxBSHandle,
@@ -347,8 +358,8 @@ pub unsafe extern "C" fn mxbs_delete(
     result.unwrap_or(0)
 }
 
-// ---------- Save ----------
-
+/// # Safety
+/// `h` must be a valid handle. `dest_path` must be a valid C string.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn mxbs_save(h: *mut MxBSHandle, dest_path: *const c_char) -> c_int {
     if h.is_null() {
@@ -368,8 +379,8 @@ pub unsafe extern "C" fn mxbs_save(h: *mut MxBSHandle, dest_path: *const c_char)
     result.unwrap_or(0)
 }
 
-// ---------- Stats ----------
-
+/// # Safety
+/// `h` must be a valid handle or null.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn mxbs_stats(h: *mut MxBSHandle) -> *const c_char {
     if h.is_null() {
@@ -385,8 +396,8 @@ pub unsafe extern "C" fn mxbs_stats(h: *mut MxBSHandle) -> *const c_char {
     result.unwrap_or(ptr::null())
 }
 
-// ---------- Free ----------
-
+/// # Safety
+/// `s` must be a pointer returned by a `mxbs_*` function or null.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn mxbs_free_string(s: *const c_char) {
     if !s.is_null() {

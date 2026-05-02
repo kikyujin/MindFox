@@ -90,10 +90,9 @@ pub fn parse_scores(response: &str) -> Option<[u8; FACTOR_DIM]> {
         .replace("```json", "").replace("```", "");
     let cleaned = cleaned.trim();
 
-    if let Some(arr) = extract_array(cleaned) {
-        if let Some(result) = normalize_to_16(&arr) {
-            return Some(result);
-        }
+    if let Some(arr) = extract_array(cleaned)
+        && let Some(result) = normalize_to_16(&arr) {
+        return Some(result);
     }
 
     let numbers: Vec<i32> = cleaned.split(|c: char| !c.is_ascii_digit() && c != '-')

@@ -1,6 +1,6 @@
 [package]
 name = "mxmindfox"
-description = "Multi-agent orchestration layer built on MxBS"
+description = "Multi-agent mood & decision layer on MxBS"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
@@ -8,7 +8,14 @@ repository.workspace = true
 
 [lib]
 crate-type = ["lib", "cdylib"]
+name = "mxmindfox"
 
 [dependencies]
 mxbs = { path = "../mxbs" }
-rusqlite = { workspace = true }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+rand = { version = "0.8", features = ["small_rng"] }
+thiserror = "1"
+
+[dev-dependencies]
+tempfile = "3"

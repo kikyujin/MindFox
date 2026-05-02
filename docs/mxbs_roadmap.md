@@ -1,12 +1,26 @@
 # MxBS — Roadmap
 
-> Last updated: 2026-04-29
+> Last updated: 2026-05-02
 
-署名: 2026-04-29 Kikyujin - Mahito KIDA
+署名: 2026-05-02 Kikyujin - Mahito KIDA
 
 ---
 
 ## 1. 変更履歴
+
+### v0.3.1 (2026-05-02) — MxMindFox 切り出し対応 + clippy 警告潰し
+
+MxMindFox v0.1.0 切り出しに伴う MxBS 側の最小差分対応。
+**ロジック・スキーマ・API には変更なし**。
+
+- **Cell に `Deserialize` derive 追加**（lib.rs 1行）
+  - 動機: MxMindFox FFI で `serde_json::from_str::<Vec<mxbs::Cell>>(cells_json)` を呼ぶため
+  - Serialize と対称的になり、save/load 系の将来拡張にも有利
+- **clippy 警告潰し**（マスター指示）
+  - Rust 2024 edition 準拠のスタイル統一
+- 既存テスト 43件（34 + 9）全パス維持
+- 戦国SIM 33テスト全パス維持
+- API 互換性維持: 既存利用側に影響なし
 
 ### v0.3.0 (2026-04-29) — ページワンデモ + 忘却定量テスト
 
@@ -129,14 +143,28 @@ Rust MxBS の実地テスト。3 デモタイトルで全パス検証。
 
 3 デモで共通パターンが確立。切り出しのトリガー条件を満たした。
 
-**MxMindFox crate（Rust + C API + Python/C# wrapper）:**
-- [ ] compute_mood — 戦国SIM（攻撃閾値補正）+ おやつ（証言態度）で実証済み
-- [ ] compute_diplomacy_toward — おやつで中核機能として動作確認
-- [ ] adjust_threshold — 戦国SIM由来
-- [ ] Mood struct 汎用化（プリセット駆動）
-- [ ] C bindings + Python wrapper + C# wrapper
+**MxMindFox crate（Rust + C API + Python wrapper）— Phase 1-7 完了 (2026-05-02):**
 
-**デモタイトル展開:**
+- [x] Mood / MoodPreset / MoodAxis（プリセット駆動、固定 struct ではなく `HashMap<String, f32>`）
+- [x] compute_mood — 戦国SIM・おやつ両方対応の汎用実装
+- [x] compute_diplomacy_toward — trust 軸読みの薄いラッパー
+- [x] adjust_threshold — ThresholdRule で覇気パッチ汎用化
+- [x] decision::remember — Bernoulli + sigmoid（temperature 揺らぎ）
+- [x] decision::sample — Multinomial + softmax（temperature 揺らぎ）
+- [x] C bindings (cdylib、9 関数 export)
+- [x] Python ctypes ブリッジ + スモークテスト
+- [x] 54テスト全パス（mood 14 + diplomacy 5 + threshold 5 + decision 11 + ffi 12 + python 7）
+- [x] libmxmindfox.dylib (2.3 MB) ビルド成功
+
+**3デモ移行（次フェーズ）:**
+
+| デモ | 内容 | 状態 |
+|---|---|---|
+| ページワン v0.4 | temperature 揺らぎ検証（50ゲーム × 3条件キャンペーン） | 🔜 発注書 #2 待ち |
+| 戦国SIM v2 | 覇気パッチ削除、compute_mood + adjust_threshold 統合 | 🔜 発注書 #3 待ち |
+| おやつ v2 | compute_diplomacy_toward 統合、3ゲームキャンペーン再走 | 🔜 発注書 #4 待ち |
+
+**Indian Poker / PoW-WWI（後続）:**
 
 | タイトル | 内容 | MxBS 利用 |
 |---|---|---|
@@ -164,7 +192,6 @@ Rust MxBS の実地テスト。3 デモタイトルで全パス検証。
 |---|---|---|---|
 | xMBS Lite (Rust crate) | 2026-04-27 | bge-m3/ONNX/sqlite-vec 依存。16バイト因子ベクトルに置換 | MxBS |
 | MindFox (Rust crate) | 2026-04-28 | 過剰な抽象化。実態は for ループと文字列連結 | MxBS `pub mod agents` |
-| MxMindFox (Rust crate) | 2026-04-28 | 設計段階で不要と判断 | MxBS `pub mod agents` |
 | xMBS v0.6.0 (Python/FastAPI) | 2026-04-01 | Rust 再設計。AI館向けは継続運用 | xMBS Lite → MxBS |
 
 ---
@@ -203,6 +230,22 @@ Rust MxBS の実地テスト。3 デモタイトルで全パス検証。
 - **根拠**: indian_poker.py の記憶は `list[str]` の末尾5件。この程度のゲームにも AgentRegistry がフィットする薄さが正解
 - **帰結**: ゲーム固有ロジック（プロンプト構築、ターンループ、LLM呼び出し）はホスト側の責務
 - **※ 2026-04-29 に判断変更**: 3 デモで共通パターン確立により切り出しを決定
+
+### MxMindFox v0.1.0 完成（2026-05-02）
+
+- **決定**: MxMindFox を独立 crate として切り出し、Phase 1-7（本体実装）を完成
+- **規模**: ~800行 Rust + ~200行 Python ブリッジ。54テスト全パス
+- **設計の核**: Mood をプリセット駆動（HashMap<String, f32>）、decision を Mood 非依存ヘルパー、archetype プリセットはゲーム側 JSON
+- **MxBS 側の影響**: Cell に Deserialize derive 追加のみ（v0.3.1）。ロジック・スキーマ無変更
+- **temperature 概念の本質的整理**: ページワンのhit/miss判定は Bernoulli (sigmoid)、複数候補選択は Multinomial (softmax)。両者を `decision::remember` / `decision::sample` として並立させた
+- **次フェーズ**: 3デモ移行（pageone v0.4 / sengoku v2 / oyatsu v2）
+
+### Cell に Deserialize derive 追加（2026-05-02）
+
+- **決定**: MxBS の Cell 構造体に `Deserialize` を derive 追加
+- **理由**: MxMindFox FFI で `Vec<mxbs::Cell>` の JSON パースが必要。中間 struct を作る案 (B) は二重定義になり保守性が悪い
+- **「MxBS には触らない」原則との整合**: アーキテクチャ §14.4 の本意は「コアロジック・スキーマ・API に変更を加えない」こと。derive 1行は「シリアライズ対称性の補完」であり、趣旨に反しない
+- **影響**: API 互換性維持。既存テスト 43件全パス
 
 ### is_public フィールドの廃止（2026-04-28）
 
@@ -275,3 +318,4 @@ Rust MxBS の実地テスト。3 デモタイトルで全パス検証。
 | 2026-04-29 | 1.1 | ちびエルマー🦊 | Phase 2 進捗更新（C bindings + Python bridge 完了） |
 | 2026-04-29 | 1.2 | ちびエルマー🦊 | おやつデモ完了を反映 |
 | 2026-04-29 | 1.3 | エルマー🦊 + マスター | ページワンデモ完了、忘却定量テスト完了、Phase 2 完了、MxMindFox切り出し決定 |
+| 2026-05-02 | 1.4 | エルマー🦊 + マスター | MxMindFox v0.1.0 Phase 1-7 完了反映、Cell に Deserialize 追加（v0.3.1）、Phase 3 状態更新 |

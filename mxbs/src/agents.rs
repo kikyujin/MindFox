@@ -8,6 +8,10 @@ pub struct AgentRegistry {
     all_bits: u64,
 }
 
+impl Default for AgentRegistry {
+    fn default() -> Self { Self::new() }
+}
+
 impl AgentRegistry {
     pub fn new() -> Self {
         Self {
