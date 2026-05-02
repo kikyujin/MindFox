@@ -2,11 +2,11 @@
 
 **Factor-Vector Memory Management Middleware for Games**
 
-> Version: 0.1.0 (draft) | Date: 2026-04-28
+> Version: 0.1.1 | Date: 2026-05-03
 > Authors: エルマー🦊 + マスター
 > Origin: xMBS Lite (Rust/bge-m3/sqlite-vec) → MxBS (u8×16 factor vector / SQLite only)
 
-署名: 2026-04-28 Kikyujin - Mahito KIDA
+署名: 2026-05-03 Kikyujin - Mahito KIDA
 
 ---
 
@@ -188,10 +188,10 @@ mode: u16
   bit  2-0:  other 権限 (rwx)
 ```
 
-#### エンディアン
+#### クロスプラットフォーム互換性
 
-xMBS Lite と同一。DB ファイルのバイトオーダーは実装依存。
-異なるアーキテクチャ間での DB ファイル互換性は保証しない。
+features は u8×16（バイト単位）、他フィールドは SQLite INTEGER 型経由で読み書きされるため、
+DB ファイルは異なるアーキテクチャ間（aarch64 ↔ x86_64 等）で互換性を持つ。
 
 ### 2.4 immutable / mutable フィールド
 

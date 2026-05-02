@@ -1,12 +1,10 @@
 # MxBS — Multitapps Extended Brain System
 
-*Concept Document v1.0 — 2026-04-27*
+*Concept Document v1.1 — 2026-05-02*
 
 *MULTITAPPS Inc.*
 
-
-
-署名: 2026-04-27 Kikyujin - Mahito KIDA
+署名: 2026-05-02 Mahito KIDA aka Kikyujin
 
 ---
 
@@ -182,8 +180,8 @@ MindFox から継承したセル構造を、因子ベクトルに適合させる
 | `text` | TEXT | 記憶のテキスト本体 |
 | `features` | BLOB(16) | 因子ベクトル（u8 × 16） |
 | `group_bits` | INTEGER | アクセス制御ビットマスク（最大 64 エージェント） |
+| `mode` | INTEGER | UNIX パーミッション（例: `0o744` = 全員可読） |
 | `price` | INTEGER | 重要度（0〜255）。高いほど忘れにくい |
-| `is_public` | INTEGER | 1 = 全員に公開 |
 
 ### 5.2 SQLite スキーマ
 
@@ -195,8 +193,8 @@ CREATE TABLE cells (
     text        TEXT    NOT NULL,
     features    BLOB    NOT NULL,    -- 16 bytes exactly
     group_bits  INTEGER NOT NULL DEFAULT 0,
-    price       INTEGER NOT NULL DEFAULT 100,
-    is_public   INTEGER NOT NULL DEFAULT 0
+    mode        INTEGER NOT NULL DEFAULT 484,  -- 0o744
+    price       INTEGER NOT NULL DEFAULT 100
 );
 ```
 
@@ -229,17 +227,18 @@ decay(Δt) = exp(-0.693 × Δt / half_life)
 ### 6.3 アクセス制御
 
 `group_bits` はエージェントごとのビットフラグ（1 エージェント = 1 ビット、最大 64）。
+`mode` は UNIX パーミッション形式で owner / group / other の rwx を制御する。
 
 ```
-セルが見える条件:
-  is_public = 1
-  OR
-  cell.group_bits & viewer_bit != 0
+セルが見える条件（mode ベース）:
+  viewer が owner → mode の owner 部に r ビットがあるか
+  viewer が group に含まれる → mode の group 部に r ビットがあるか
+  それ以外 → mode の other 部に r ビットがあるか
 ```
 
-- 密室で 2 人だけの交渉 → 2 人のビットだけ ON
-- 公式声明 → is_public = 1
-- inner_voice（内なる声）→ 本人のビットのみ
+- 密室で 2 人だけの交渉 → `mode=0o740`、2 人のビットだけ group_bits に ON
+- 公式声明 → `mode=0o744`（other=r で全員可読）
+- inner_voice（内なる声）→ `mode=0o700`（owner のみ）
 
 ### 6.4 Dream（将来拡張）
 
@@ -384,3 +383,4 @@ MxBS
 | Date | Version | Author | Notes |
 |---|---|---|---|
 | 2026-04-27 | 1.0 | マスター + エルマー🦊 | Initial creation. Hawaii 2035 で 6 ターン完走実証後に策定 |
+| 2026-05-02 | 1.1 | エルマー🦊 | §5/§6: `is_public` フィールドを削除、`mode`（UNIX パーミッション）に統合。spec §17.5 の設計判断に合わせて concept を同期 |
