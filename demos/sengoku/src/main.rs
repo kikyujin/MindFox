@@ -85,7 +85,7 @@ fn display_final_ranking(state: &GameState) {
         .filter(|(_, cs)| cs.alive)
         .map(|(&id, cs)| (id, cs.troops + cs.territories.len() as u32 * 100))
         .collect();
-    ranking.sort_by(|a, b| b.1.cmp(&a.1));
+    ranking.sort_by_key(|b| std::cmp::Reverse(b.1));
     for (i, (id, score)) in ranking.iter().enumerate() {
         println!("  {}. {} (スコア:{})", i + 1, state.defs[id].daimyo, score);
     }
@@ -360,10 +360,8 @@ async fn process_alliance_proposals(
     for ta in all_actions {
         for action in &ta.actions {
             match action {
-                Action::Alliance(target) => {
-                    if state.countries[target].alive {
-                        raw.push((ta.country_id, *target));
-                    }
+                Action::Alliance(target) if state.countries[target].alive => {
+                    raw.push((ta.country_id, *target));
                 }
                 Action::Attack(target) => {
                     attack_targets
