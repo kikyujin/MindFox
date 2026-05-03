@@ -1,5 +1,5 @@
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use serde::{Serialize, Deserialize};
 
 use crate::error::{MxmfError, MxmfResult};
 
@@ -12,7 +12,9 @@ pub struct Mood {
 }
 
 impl Mood {
-    pub fn new() -> Self { Self::default() }
+    pub fn new() -> Self {
+        Self::default()
+    }
 
     pub fn get(&self, axis: &str) -> Option<f32> {
         self.axes.get(axis).copied()
@@ -27,7 +29,9 @@ impl Mood {
     }
 
     pub fn from_baseline(baseline: &HashMap<String, f32>) -> Self {
-        Self { axes: baseline.clone() }
+        Self {
+            axes: baseline.clone(),
+        }
     }
 }
 
@@ -96,11 +100,7 @@ impl MoodPreset {
 }
 
 /// Compute mood from recent memory cells.
-pub fn compute_mood(
-    cells: &[mxbs::Cell],
-    preset: &MoodPreset,
-    archetype: Option<&str>,
-) -> Mood {
+pub fn compute_mood(cells: &[mxbs::Cell], preset: &MoodPreset, archetype: Option<&str>) -> Mood {
     let mut mood = Mood::new();
     let baseline = archetype.and_then(|a| preset.baseline_for(a));
 

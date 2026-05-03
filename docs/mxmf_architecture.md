@@ -785,7 +785,7 @@ prompt = f"""
 ### 14.1 Mood をプリセット駆動にした理由（2026-05-02）
 
 - **決定**: Mood は固定 struct ではなく `HashMap<String, f32>` + プリセット定義
-- **理由**: 戦国SIM（aggression）/ おやつ（suspicion等4軸）/ ページワン（temperature）/ PoW-WWI（JUWA/MUKA）で軸が全て違う。固定 struct だと毎ゲーム crate 改修が必要になる
+- **理由**: 戦国SIM（aggression）/ おやつ（suspicion等4軸）/ ページワン（temperature）/ (planned demo #5)（JUWA/MUKA）で軸が全て違う。固定 struct だと毎ゲーム crate 改修が必要になる
 - **帰結**: MxMindFox 自体は軸名を知らない純粋エンジン。MxBS の Preset 設計と統一の流儀
 
 ### 14.2 decision モジュールを Mood 非依存にした理由（2026-05-02）
@@ -821,7 +821,7 @@ prompt = f"""
 | MoodPreset の version 互換 | バージョンチェック有 / 無 | 当面なし。preset.json 編集で運用 |
 | compute_mood の集計方法 | 平均 / 加重平均 / decay 反映 | v0.1.0 は単純平均。後で必要なら追加 |
 | sample の戻り値 | インデックス / 値の参照 | Rust API は `&T`、C API はインデックス |
-| Unity C# wrapper | v0.1.0 で作るか後回しか | Indian Poker / PoW-WWI 着手時でOK |
+| Unity C# wrapper | v0.1.0 で作るか後回しか | (planned demo #4) / (planned demo #5) 着手時でOK |
 | seed の自動進行 | ライブラリで管理 / ホスト管理 | ホスト管理（再現性のため） |
 
 ---

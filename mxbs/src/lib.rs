@@ -4,12 +4,12 @@
 //! Uses u8×16 factor vectors instead of language model embeddings.
 //! Only depends on SQLite.
 
-pub mod preset;
 pub mod agents;
 pub mod ffi;
+pub mod preset;
 
-pub use preset::{Preset, Axis, parse_scores, default_scores};
 pub use agents::AgentRegistry;
+pub use preset::{Axis, Preset, default_scores, parse_scores};
 
 use rusqlite::Connection;
 
@@ -39,7 +39,9 @@ pub fn cosine_similarity(a: &[u8; FACTOR_DIM], b: &[u8; FACTOR_DIM]) -> f32 {
 // ─── Decay / Scoring ───────────────────────────────────────
 
 fn decay(delta_turns: u32, half_life: u32) -> f32 {
-    if half_life == 0 { return 0.0; }
+    if half_life == 0 {
+        return 0.0;
+    }
     0.5_f32.powf(delta_turns as f32 / half_life as f32)
 }
 
@@ -96,14 +98,38 @@ impl Cell {
         }
     }
 
-    pub fn from(mut self, from: u32) -> Self { self.from = from; self }
-    pub fn turn(mut self, turn: u32) -> Self { self.turn = turn; self }
-    pub fn group_bits(mut self, group_bits: u64) -> Self { self.group_bits = group_bits; self }
-    pub fn mode(mut self, mode: u16) -> Self { self.mode = mode; self }
-    pub fn price(mut self, price: u8) -> Self { self.price = price; self }
-    pub fn importance(mut self, importance: f32) -> Self { self.importance = importance; self }
-    pub fn features(mut self, features: [u8; FACTOR_DIM]) -> Self { self.features = features; self }
-    pub fn meta(mut self, meta: impl Into<String>) -> Self { self.meta = meta.into(); self }
+    pub fn from(mut self, from: u32) -> Self {
+        self.from = from;
+        self
+    }
+    pub fn turn(mut self, turn: u32) -> Self {
+        self.turn = turn;
+        self
+    }
+    pub fn group_bits(mut self, group_bits: u64) -> Self {
+        self.group_bits = group_bits;
+        self
+    }
+    pub fn mode(mut self, mode: u16) -> Self {
+        self.mode = mode;
+        self
+    }
+    pub fn price(mut self, price: u8) -> Self {
+        self.price = price;
+        self
+    }
+    pub fn importance(mut self, importance: f32) -> Self {
+        self.importance = importance;
+        self
+    }
+    pub fn features(mut self, features: [u8; FACTOR_DIM]) -> Self {
+        self.features = features;
+        self
+    }
+    pub fn meta(mut self, meta: impl Into<String>) -> Self {
+        self.meta = meta.into();
+        self
+    }
 }
 
 // ─── Result Types ──────────────────────────────────────────
@@ -180,7 +206,9 @@ pub enum MxBSError {
 }
 
 impl From<rusqlite::Error> for MxBSError {
-    fn from(e: rusqlite::Error) -> Self { MxBSError::Sqlite(e) }
+    fn from(e: rusqlite::Error) -> Self {
+        MxBSError::Sqlite(e)
+    }
 }
 
 impl std::fmt::Display for MxBSError {
@@ -229,7 +257,8 @@ impl MxBS {
     }
 
     fn create_schema(&self) -> Result<(), MxBSError> {
-        self.conn.execute_batch("
+        self.conn.execute_batch(
+            "
             CREATE TABLE IF NOT EXISTS cells (
                 id          INTEGER PRIMARY KEY AUTOINCREMENT,
                 owner       INTEGER NOT NULL,
@@ -252,7 +281,8 @@ impl MxBS {
             );
             INSERT OR IGNORE INTO mxbs_meta (key, value) VALUES ('version', '0.1.1');
             INSERT OR IGNORE INTO mxbs_meta (key, value) VALUES ('factor_dim', '16');
-        ")?;
+        ",
+        )?;
         Ok(())
     }
 
@@ -284,7 +314,8 @@ impl MxBS {
             "SELECT id, owner, \"from\", turn, group_bits, mode, price, importance, text, features, meta
              FROM cells"
         )?;
-        let cells = stmt.query_map([], Self::row_to_cell)?
+        let cells = stmt
+            .query_map([], Self::row_to_cell)?
             .collect::<Result<Vec<_>, _>>()?;
         Ok(cells)
     }
@@ -341,7 +372,8 @@ impl MxBS {
              FROM cells WHERE id = ?1"
         )?;
 
-        let cell = stmt.query_row([cell_id as i64], Self::row_to_cell)
+        let cell = stmt
+            .query_row([cell_id as i64], Self::row_to_cell)
             .map_err(|e| match e {
                 rusqlite::Error::QueryReturnedNoRows => MxBSError::NotFound(cell_id),
                 other => MxBSError::Sqlite(other),
@@ -357,14 +389,19 @@ impl MxBS {
             return Ok(false);
         }
 
-        self.conn.execute("DELETE FROM cells WHERE id = ?1", [cell_id as i64])?;
+        self.conn
+            .execute("DELETE FROM cells WHERE id = ?1", [cell_id as i64])?;
         Ok(true)
     }
 
     // ─── Search ────────────────────────────────────────────
 
-    pub fn search(&self, query_features: [u8; FACTOR_DIM],
-                  viewer_id: u32, viewer_groups: u64) -> SearchBuilder<'_> {
+    pub fn search(
+        &self,
+        query_features: [u8; FACTOR_DIM],
+        viewer_id: u32,
+        viewer_groups: u64,
+    ) -> SearchBuilder<'_> {
         SearchBuilder {
             mxbs: self,
             query_features: Some(query_features),
@@ -422,8 +459,13 @@ impl MxBS {
 
     // ─── Update ────────────────────────────────────────────
 
-    pub fn update_group_bits(&self, cell_id: u64, new_group_bits: u64,
-                             requester: u32, req_groups: u64) -> Result<bool, MxBSError> {
+    pub fn update_group_bits(
+        &self,
+        cell_id: u64,
+        new_group_bits: u64,
+        requester: u32,
+        req_groups: u64,
+    ) -> Result<bool, MxBSError> {
         let cell = self.get(cell_id)?;
         if !Self::can_write(&cell, requester, req_groups) {
             return Ok(false);
@@ -435,8 +477,13 @@ impl MxBS {
         Ok(true)
     }
 
-    pub fn update_mode(&self, cell_id: u64, new_mode: u16,
-                       requester: u32, req_groups: u64) -> Result<bool, MxBSError> {
+    pub fn update_mode(
+        &self,
+        cell_id: u64,
+        new_mode: u16,
+        requester: u32,
+        req_groups: u64,
+    ) -> Result<bool, MxBSError> {
         let cell = self.get(cell_id)?;
         if !Self::can_write(&cell, requester, req_groups) {
             return Ok(false);
@@ -448,8 +495,13 @@ impl MxBS {
         Ok(true)
     }
 
-    pub fn update_meta(&self, cell_id: u64, new_meta: &str,
-                       requester: u32, req_groups: u64) -> Result<bool, MxBSError> {
+    pub fn update_meta(
+        &self,
+        cell_id: u64,
+        new_meta: &str,
+        requester: u32,
+        req_groups: u64,
+    ) -> Result<bool, MxBSError> {
         let cell = self.get(cell_id)?;
         if !Self::can_write(&cell, requester, req_groups) {
             return Ok(false);
@@ -466,17 +518,19 @@ impl MxBS {
     pub fn get_unscored(&self) -> Result<Vec<UnscoredCell>, MxBSError> {
         let zero_features = [0u8; FACTOR_DIM];
         let mut stmt = self.conn.prepare(
-            "SELECT id, text, owner, turn, meta FROM cells WHERE features = ?1 ORDER BY turn ASC"
+            "SELECT id, text, owner, turn, meta FROM cells WHERE features = ?1 ORDER BY turn ASC",
         )?;
-        let results = stmt.query_map([zero_features.as_slice()], |row| {
-            Ok(UnscoredCell {
-                id: row.get::<_, i64>(0)? as u64,
-                text: row.get(1)?,
-                owner: row.get::<_, i64>(2)? as u32,
-                turn: row.get::<_, i64>(3)? as u32,
-                meta: row.get(4)?,
-            })
-        })?.collect::<Result<Vec<_>, _>>()?;
+        let results = stmt
+            .query_map([zero_features.as_slice()], |row| {
+                Ok(UnscoredCell {
+                    id: row.get::<_, i64>(0)? as u64,
+                    text: row.get(1)?,
+                    owner: row.get::<_, i64>(2)? as u32,
+                    turn: row.get::<_, i64>(3)? as u32,
+                    meta: row.get(4)?,
+                })
+            })?
+            .collect::<Result<Vec<_>, _>>()?;
         Ok(results)
     }
 
@@ -504,7 +558,9 @@ impl MxBS {
     // ─── Meta ──────────────────────────────────────────────
 
     pub fn meta_get(&self, key: &str) -> Result<Option<String>, MxBSError> {
-        let mut stmt = self.conn.prepare("SELECT value FROM mxbs_meta WHERE key = ?1")?;
+        let mut stmt = self
+            .conn
+            .prepare("SELECT value FROM mxbs_meta WHERE key = ?1")?;
         let result = stmt.query_row(rusqlite::params![key], |row| row.get::<_, String>(0));
         match result {
             Ok(v) => Ok(Some(v)),
@@ -524,13 +580,14 @@ impl MxBS {
     // ─── Stats ─────────────────────────────────────────────
 
     pub fn stats(&self) -> Result<Stats, MxBSError> {
-        let total: i64 = self.conn.query_row(
-            "SELECT COUNT(*) FROM cells", [], |row| row.get(0)
-        )?;
+        let total: i64 = self
+            .conn
+            .query_row("SELECT COUNT(*) FROM cells", [], |row| row.get(0))?;
         let zero_features = [0u8; FACTOR_DIM];
         let unscored: i64 = self.conn.query_row(
             "SELECT COUNT(*) FROM cells WHERE features = ?1",
-            [zero_features.as_slice()], |row| row.get(0)
+            [zero_features.as_slice()],
+            |row| row.get(0),
         )?;
         Ok(Stats {
             total: total as u64,
@@ -557,13 +614,34 @@ pub struct SearchBuilder<'a> {
 }
 
 impl<'a> SearchBuilder<'a> {
-    pub fn current_turn(mut self, t: u32) -> Self { self.current_turn = t; self }
-    pub fn decay_factor(mut self, f: f32) -> Self { self.decay_factor_exp = f; self }
-    pub fn limit(mut self, n: usize) -> Self { self.limit = n; self }
-    pub fn owner(mut self, id: u32) -> Self { self.filter_owner = Some(id); self }
-    pub fn from(mut self, id: u32) -> Self { self.filter_from = Some(id); self }
-    pub fn after_turn(mut self, t: u32) -> Self { self.after_turn = Some(t); self }
-    pub fn before_turn(mut self, t: u32) -> Self { self.before_turn = Some(t); self }
+    pub fn current_turn(mut self, t: u32) -> Self {
+        self.current_turn = t;
+        self
+    }
+    pub fn decay_factor(mut self, f: f32) -> Self {
+        self.decay_factor_exp = f;
+        self
+    }
+    pub fn limit(mut self, n: usize) -> Self {
+        self.limit = n;
+        self
+    }
+    pub fn owner(mut self, id: u32) -> Self {
+        self.filter_owner = Some(id);
+        self
+    }
+    pub fn from(mut self, id: u32) -> Self {
+        self.filter_from = Some(id);
+        self
+    }
+    pub fn after_turn(mut self, t: u32) -> Self {
+        self.after_turn = Some(t);
+        self
+    }
+    pub fn before_turn(mut self, t: u32) -> Self {
+        self.before_turn = Some(t);
+        self
+    }
 
     pub fn exec(self) -> Result<Vec<SearchResult>, MxBSError> {
         let cells = self.mxbs.load_all_cells()?;
@@ -577,39 +655,77 @@ impl<'a> SearchBuilder<'a> {
             if !MxBS::check_read(cell, self.viewer_id, self.viewer_groups) {
                 continue;
             }
-            if let Some(o) = self.filter_owner && cell.owner != o { continue; }
-            if let Some(f) = self.filter_from && cell.from != f { continue; }
-            if let Some(t) = self.after_turn && cell.turn < t { continue; }
-            if let Some(t) = self.before_turn && cell.turn > t { continue; }
+            if let Some(o) = self.filter_owner
+                && cell.owner != o
+            {
+                continue;
+            }
+            if let Some(f) = self.filter_from
+                && cell.from != f
+            {
+                continue;
+            }
+            if let Some(t) = self.after_turn
+                && cell.turn < t
+            {
+                continue;
+            }
+            if let Some(t) = self.before_turn
+                && cell.turn > t
+            {
+                continue;
+            }
 
             let delta = self.current_turn.saturating_sub(cell.turn);
-            let d = if cell.price == PRICE_IMMORTAL { 1.0 }
-                    else { decay(delta, self.mxbs.config.half_life) };
+            let d = if cell.price == PRICE_IMMORTAL {
+                1.0
+            } else {
+                decay(delta, self.mxbs.config.half_life)
+            };
             let effective_decay = d.powf(self.decay_factor_exp);
 
             if is_vector_search {
-                if cell.features == [0u8; FACTOR_DIM] { continue; }
+                if cell.features == [0u8; FACTOR_DIM] {
+                    continue;
+                }
                 let cos = cosine_similarity(&query, &cell.features);
                 let score = effective_score(cos, cell.importance, cell.price, effective_decay);
                 results.push(SearchResult {
-                    id: cell.id, text: cell.text.clone(), cosine: cos,
-                    effective_score: score, owner: cell.owner, from: cell.from,
-                    turn: cell.turn, price: cell.price, importance: cell.importance,
-                    features: cell.features, meta: cell.meta.clone(),
+                    id: cell.id,
+                    text: cell.text.clone(),
+                    cosine: cos,
+                    effective_score: score,
+                    owner: cell.owner,
+                    from: cell.from,
+                    turn: cell.turn,
+                    price: cell.price,
+                    importance: cell.importance,
+                    features: cell.features,
+                    meta: cell.meta.clone(),
                 });
             } else {
                 let score = cell.importance * price_factor(cell.price) * effective_decay;
                 results.push(SearchResult {
-                    id: cell.id, text: cell.text.clone(), cosine: 0.0,
-                    effective_score: score, owner: cell.owner, from: cell.from,
-                    turn: cell.turn, price: cell.price, importance: cell.importance,
-                    features: cell.features, meta: cell.meta.clone(),
+                    id: cell.id,
+                    text: cell.text.clone(),
+                    cosine: 0.0,
+                    effective_score: score,
+                    owner: cell.owner,
+                    from: cell.from,
+                    turn: cell.turn,
+                    price: cell.price,
+                    importance: cell.importance,
+                    features: cell.features,
+                    meta: cell.meta.clone(),
                 });
             }
         }
 
-        results.sort_by(|a, b| b.effective_score.partial_cmp(&a.effective_score)
-            .unwrap_or(std::cmp::Ordering::Equal));
+        results.sort_by(|a, b| {
+            b.effective_score
+                .partial_cmp(&a.effective_score)
+                .unwrap_or(std::cmp::Ordering::Equal)
+        });
         results.truncate(self.limit);
         Ok(results)
     }
@@ -626,8 +742,14 @@ pub struct DreamBuilder<'a> {
 }
 
 impl<'a> DreamBuilder<'a> {
-    pub fn current_turn(mut self, t: u32) -> Self { self.current_turn = t; self }
-    pub fn limit(mut self, n: usize) -> Self { self.limit = n; self }
+    pub fn current_turn(mut self, t: u32) -> Self {
+        self.current_turn = t;
+        self
+    }
+    pub fn limit(mut self, n: usize) -> Self {
+        self.limit = n;
+        self
+    }
 
     pub fn exec(self) -> Result<Vec<DreamResult>, MxBSError> {
         let cells = self.mxbs.load_all_cells()?;
@@ -635,24 +757,40 @@ impl<'a> DreamBuilder<'a> {
         let mut results: Vec<DreamResult> = Vec::new();
 
         for cell in &cells {
-            if cell.price == PRICE_IMMORTAL { continue; }
-            if cell.features == [0u8; FACTOR_DIM] { continue; }
-            if !MxBS::check_read(cell, self.viewer_id, self.viewer_groups) { continue; }
+            if cell.price == PRICE_IMMORTAL {
+                continue;
+            }
+            if cell.features == [0u8; FACTOR_DIM] {
+                continue;
+            }
+            if !MxBS::check_read(cell, self.viewer_id, self.viewer_groups) {
+                continue;
+            }
 
             let delta = self.current_turn.saturating_sub(cell.turn);
             let d = decay(delta, self.mxbs.config.half_life);
             let bs = buried_score(cell.price, d, cell.importance);
 
             results.push(DreamResult {
-                id: cell.id, text: cell.text.clone(), buried_score: bs,
-                price: cell.price, importance: cell.importance, decay: d,
-                turn: cell.turn, owner: cell.owner, from: cell.from,
-                features: cell.features, meta: cell.meta.clone(),
+                id: cell.id,
+                text: cell.text.clone(),
+                buried_score: bs,
+                price: cell.price,
+                importance: cell.importance,
+                decay: d,
+                turn: cell.turn,
+                owner: cell.owner,
+                from: cell.from,
+                features: cell.features,
+                meta: cell.meta.clone(),
             });
         }
 
-        results.sort_by(|a, b| b.buried_score.partial_cmp(&a.buried_score)
-            .unwrap_or(std::cmp::Ordering::Equal));
+        results.sort_by(|a, b| {
+            b.buried_score
+                .partial_cmp(&a.buried_score)
+                .unwrap_or(std::cmp::Ordering::Equal)
+        });
         results.truncate(self.limit);
         Ok(results)
     }
@@ -669,7 +807,10 @@ pub struct InspireBuilder<'a> {
 }
 
 impl<'a> InspireBuilder<'a> {
-    pub fn limit(mut self, n: usize) -> Self { self.limit = n; self }
+    pub fn limit(mut self, n: usize) -> Self {
+        self.limit = n;
+        self
+    }
     pub fn viewer(mut self, viewer_id: u32, viewer_groups: u64) -> Self {
         self.viewer_id = Some(viewer_id);
         self.viewer_groups = viewer_groups;
@@ -686,21 +827,35 @@ impl<'a> InspireBuilder<'a> {
         let mut results: Vec<InspireResult> = Vec::new();
 
         for cell in &cells {
-            if cell.id == self.cell_id { continue; }
-            if cell.features == [0u8; FACTOR_DIM] { continue; }
+            if cell.id == self.cell_id {
+                continue;
+            }
+            if cell.features == [0u8; FACTOR_DIM] {
+                continue;
+            }
             if let Some(vid) = self.viewer_id
-                && !MxBS::check_read(cell, vid, self.viewer_groups) { continue; }
+                && !MxBS::check_read(cell, vid, self.viewer_groups)
+            {
+                continue;
+            }
 
             let cos = cosine_similarity(&source.features, &cell.features);
             results.push(InspireResult {
-                id: cell.id, text: cell.text.clone(), cosine: cos,
-                owner: cell.owner, turn: cell.turn,
-                features: cell.features, meta: cell.meta.clone(),
+                id: cell.id,
+                text: cell.text.clone(),
+                cosine: cos,
+                owner: cell.owner,
+                turn: cell.turn,
+                features: cell.features,
+                meta: cell.meta.clone(),
             });
         }
 
-        results.sort_by(|a, b| b.cosine.partial_cmp(&a.cosine)
-            .unwrap_or(std::cmp::Ordering::Equal));
+        results.sort_by(|a, b| {
+            b.cosine
+                .partial_cmp(&a.cosine)
+                .unwrap_or(std::cmp::Ordering::Equal)
+        });
         results.truncate(self.limit);
         Ok(results)
     }
@@ -721,11 +876,19 @@ mod tests {
     #[test]
     fn test_store_and_get() {
         let m = mem();
-        let id = m.store(
-            Cell::new(1, "テスト記憶")
-                .from(2).turn(1).group_bits(0b11).mode(0o744).price(50)
-                .features([10,20,30,40,50,60,70,80,90,100,110,120,130,140,150,160])
-        ).unwrap();
+        let id = m
+            .store(
+                Cell::new(1, "テスト記憶")
+                    .from(2)
+                    .turn(1)
+                    .group_bits(0b11)
+                    .mode(0o744)
+                    .price(50)
+                    .features([
+                        10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160,
+                    ]),
+            )
+            .unwrap();
 
         let cell = m.get(id).unwrap();
         assert_eq!(cell.owner, 1);
@@ -750,9 +913,9 @@ mod tests {
     #[test]
     fn test_delete_with_permission() {
         let m = mem();
-        let id = m.store(
-            Cell::new(1, "削除テスト").turn(1).mode(0o744)
-        ).unwrap();
+        let id = m
+            .store(Cell::new(1, "削除テスト").turn(1).mode(0o744))
+            .unwrap();
 
         assert!(m.delete(id, 1, 0).unwrap());
         assert!(matches!(m.get(id), Err(MxBSError::NotFound(_))));
@@ -761,9 +924,9 @@ mod tests {
     #[test]
     fn test_delete_permission_denied() {
         let m = mem();
-        let id = m.store(
-            Cell::new(1, "保護セル").turn(1).mode(0o444)
-        ).unwrap();
+        let id = m
+            .store(Cell::new(1, "保護セル").turn(1).mode(0o444))
+            .unwrap();
 
         assert!(!m.delete(id, 1, 0).unwrap());
         assert!(m.get(id).is_ok());
@@ -779,7 +942,9 @@ mod tests {
 
     #[test]
     fn test_cosine_identical() {
-        let a = [100, 200, 50, 150, 80, 120, 90, 170, 60, 130, 40, 110, 70, 160, 30, 140];
+        let a = [
+            100, 200, 50, 150, 80, 120, 90, 170, 60, 130, 40, 110, 70, 160, 30, 140,
+        ];
         assert!((cosine_similarity(&a, &a) - 1.0).abs() < 1e-6);
     }
 
@@ -793,14 +958,39 @@ mod tests {
     #[test]
     fn test_search_basic() {
         let m = mem();
-        let features_a = [200, 180, 100, 50, 80, 60, 120, 140, 90, 50, 160, 100, 70, 130, 90, 110];
-        let features_b = [50, 30, 200, 180, 120, 170, 30, 40, 150, 200, 40, 160, 180, 50, 170, 60];
+        let features_a = [
+            200, 180, 100, 50, 80, 60, 120, 140, 90, 50, 160, 100, 70, 130, 90, 110,
+        ];
+        let features_b = [
+            50, 30, 200, 180, 120, 170, 30, 40, 150, 200, 40, 160, 180, 50, 170, 60,
+        ];
 
-        m.store(Cell::new(1, "外交的圧力").turn(1).mode(0o744).price(80).features(features_a)).unwrap();
-        m.store(Cell::new(1, "経済政策").turn(1).mode(0o744).price(80).features(features_b)).unwrap();
+        m.store(
+            Cell::new(1, "外交的圧力")
+                .turn(1)
+                .mode(0o744)
+                .price(80)
+                .features(features_a),
+        )
+        .unwrap();
+        m.store(
+            Cell::new(1, "経済政策")
+                .turn(1)
+                .mode(0o744)
+                .price(80)
+                .features(features_b),
+        )
+        .unwrap();
 
-        let query = [190, 170, 110, 60, 70, 50, 130, 150, 80, 40, 150, 90, 60, 120, 80, 100];
-        let results = m.search(query, 1, 0).current_turn(1).limit(2).exec().unwrap();
+        let query = [
+            190, 170, 110, 60, 70, 50, 130, 150, 80, 40, 150, 90, 60, 120, 80, 100,
+        ];
+        let results = m
+            .search(query, 1, 0)
+            .current_turn(1)
+            .limit(2)
+            .exec()
+            .unwrap();
         assert_eq!(results.len(), 2);
         assert_eq!(results[0].text, "外交的圧力");
     }
@@ -809,8 +999,22 @@ mod tests {
     fn test_search_acl() {
         let m = mem();
         let f = [100; FACTOR_DIM];
-        m.store(Cell::new(1, "秘密").turn(1).mode(0o700).price(80).features(f)).unwrap();
-        m.store(Cell::new(1, "公開").turn(1).mode(0o744).price(80).features(f)).unwrap();
+        m.store(
+            Cell::new(1, "秘密")
+                .turn(1)
+                .mode(0o700)
+                .price(80)
+                .features(f),
+        )
+        .unwrap();
+        m.store(
+            Cell::new(1, "公開")
+                .turn(1)
+                .mode(0o744)
+                .price(80)
+                .features(f),
+        )
+        .unwrap();
 
         let results = m.search(f, 2, 0).current_turn(1).limit(10).exec().unwrap();
         assert_eq!(results.len(), 1);
@@ -820,11 +1024,23 @@ mod tests {
     #[test]
     fn test_search_skips_unscored() {
         let m = mem();
-        m.store(Cell::new(1, "未スコアリング").turn(1).mode(0o744).price(80)).unwrap();
-        m.store(Cell::new(1, "スコアリング済み").turn(1).mode(0o744).price(80)
-            .features([100; FACTOR_DIM])).unwrap();
+        m.store(Cell::new(1, "未スコアリング").turn(1).mode(0o744).price(80))
+            .unwrap();
+        m.store(
+            Cell::new(1, "スコアリング済み")
+                .turn(1)
+                .mode(0o744)
+                .price(80)
+                .features([100; FACTOR_DIM]),
+        )
+        .unwrap();
 
-        let results = m.search([100; FACTOR_DIM], 1, 0).current_turn(1).limit(10).exec().unwrap();
+        let results = m
+            .search([100; FACTOR_DIM], 1, 0)
+            .current_turn(1)
+            .limit(10)
+            .exec()
+            .unwrap();
         assert_eq!(results.len(), 1);
         assert_eq!(results[0].text, "スコアリング済み");
     }
@@ -833,8 +1049,22 @@ mod tests {
     fn test_search_decay() {
         let m = mem();
         let f = [100; FACTOR_DIM];
-        m.store(Cell::new(1, "古い").turn(1).mode(0o744).price(80).features(f)).unwrap();
-        m.store(Cell::new(1, "新しい").turn(10).mode(0o744).price(80).features(f)).unwrap();
+        m.store(
+            Cell::new(1, "古い")
+                .turn(1)
+                .mode(0o744)
+                .price(80)
+                .features(f),
+        )
+        .unwrap();
+        m.store(
+            Cell::new(1, "新しい")
+                .turn(10)
+                .mode(0o744)
+                .price(80)
+                .features(f),
+        )
+        .unwrap();
 
         let results = m.search(f, 1, 0).current_turn(10).limit(2).exec().unwrap();
         assert_eq!(results[0].text, "新しい");
@@ -844,9 +1074,30 @@ mod tests {
     fn test_dream_basic() {
         let m = mem();
         let f = [100; FACTOR_DIM];
-        m.store(Cell::new(1, "重要な古い記憶").turn(1).mode(0o744).price(200).features(f)).unwrap();
-        m.store(Cell::new(1, "普通の新しい記憶").turn(9).mode(0o744).price(50).features(f)).unwrap();
-        m.store(Cell::new(1, "不滅記憶").turn(1).mode(0o744).price(PRICE_IMMORTAL).features(f)).unwrap();
+        m.store(
+            Cell::new(1, "重要な古い記憶")
+                .turn(1)
+                .mode(0o744)
+                .price(200)
+                .features(f),
+        )
+        .unwrap();
+        m.store(
+            Cell::new(1, "普通の新しい記憶")
+                .turn(9)
+                .mode(0o744)
+                .price(50)
+                .features(f),
+        )
+        .unwrap();
+        m.store(
+            Cell::new(1, "不滅記憶")
+                .turn(1)
+                .mode(0o744)
+                .price(PRICE_IMMORTAL)
+                .features(f),
+        )
+        .unwrap();
 
         let dreams = m.dream(1, 0).current_turn(10).limit(10).exec().unwrap();
         assert!(dreams.iter().all(|d| d.text != "不滅記憶"));
@@ -856,7 +1107,13 @@ mod tests {
     #[test]
     fn test_dream_skips_unscored() {
         let m = mem();
-        m.store(Cell::new(1, "未スコアリング").turn(1).mode(0o744).price(100)).unwrap();
+        m.store(
+            Cell::new(1, "未スコアリング")
+                .turn(1)
+                .mode(0o744)
+                .price(100),
+        )
+        .unwrap();
         let dreams = m.dream(1, 0).current_turn(10).limit(10).exec().unwrap();
         assert!(dreams.is_empty());
     }
@@ -866,8 +1123,15 @@ mod tests {
     #[test]
     fn test_reinforce() {
         let m = mem();
-        let id = m.store(Cell::new(1, "記憶").turn(1).mode(0o744).price(80)
-            .features([100; FACTOR_DIM])).unwrap();
+        let id = m
+            .store(
+                Cell::new(1, "記憶")
+                    .turn(1)
+                    .mode(0o744)
+                    .price(80)
+                    .features([100; FACTOR_DIM]),
+            )
+            .unwrap();
         m.reinforce(id, 5.0).unwrap();
         let cell = m.get(id).unwrap();
         assert!((cell.importance - 5.0).abs() < 1e-6);
@@ -876,8 +1140,15 @@ mod tests {
     #[test]
     fn test_reinforce_bypasses_readonly() {
         let m = mem();
-        let id = m.store(Cell::new(1, "プリセット").turn(1).mode(0o444).price(80)
-            .features([100; FACTOR_DIM])).unwrap();
+        let id = m
+            .store(
+                Cell::new(1, "プリセット")
+                    .turn(1)
+                    .mode(0o444)
+                    .price(80)
+                    .features([100; FACTOR_DIM]),
+            )
+            .unwrap();
         m.reinforce(id, 3.0).unwrap();
         assert!((m.get(id).unwrap().importance - 3.0).abs() < 1e-6);
     }
@@ -885,7 +1156,9 @@ mod tests {
     #[test]
     fn test_reinforce_range_error() {
         let m = mem();
-        let id = m.store(Cell::new(1, "記憶").turn(1).features([100; FACTOR_DIM])).unwrap();
+        let id = m
+            .store(Cell::new(1, "記憶").turn(1).features([100; FACTOR_DIM]))
+            .unwrap();
         assert!(m.reinforce(id, 11.0).is_err());
         assert!(m.reinforce(id, -0.1).is_err());
     }
@@ -893,13 +1166,23 @@ mod tests {
     #[test]
     fn test_inspire() {
         let m = mem();
-        let f_diplo = [200, 180, 100, 50, 80, 60, 120, 140, 90, 50, 160, 100, 70, 130, 90, 110];
-        let f_econ  = [50, 30, 200, 180, 120, 170, 30, 40, 150, 200, 40, 160, 180, 50, 170, 60];
-        let f_diplo2 = [190, 170, 110, 60, 70, 50, 130, 150, 80, 40, 150, 90, 60, 120, 80, 100];
+        let f_diplo = [
+            200, 180, 100, 50, 80, 60, 120, 140, 90, 50, 160, 100, 70, 130, 90, 110,
+        ];
+        let f_econ = [
+            50, 30, 200, 180, 120, 170, 30, 40, 150, 200, 40, 160, 180, 50, 170, 60,
+        ];
+        let f_diplo2 = [
+            190, 170, 110, 60, 70, 50, 130, 150, 80, 40, 150, 90, 60, 120, 80, 100,
+        ];
 
-        let id1 = m.store(Cell::new(1, "外交A").turn(1).mode(0o744).features(f_diplo)).unwrap();
-        m.store(Cell::new(1, "経済").turn(1).mode(0o744).features(f_econ)).unwrap();
-        m.store(Cell::new(1, "外交B").turn(1).mode(0o744).features(f_diplo2)).unwrap();
+        let id1 = m
+            .store(Cell::new(1, "外交A").turn(1).mode(0o744).features(f_diplo))
+            .unwrap();
+        m.store(Cell::new(1, "経済").turn(1).mode(0o744).features(f_econ))
+            .unwrap();
+        m.store(Cell::new(1, "外交B").turn(1).mode(0o744).features(f_diplo2))
+            .unwrap();
 
         let related = m.inspire(id1).limit(2).exec().unwrap();
         assert_eq!(related.len(), 2);
@@ -909,8 +1192,15 @@ mod tests {
     #[test]
     fn test_update_group_bits() {
         let m = mem();
-        let id = m.store(Cell::new(1, "密会").turn(1).mode(0o740)
-            .group_bits(0b01).features([100; FACTOR_DIM])).unwrap();
+        let id = m
+            .store(
+                Cell::new(1, "密会")
+                    .turn(1)
+                    .mode(0o740)
+                    .group_bits(0b01)
+                    .features([100; FACTOR_DIM]),
+            )
+            .unwrap();
 
         assert!(m.update_group_bits(id, 0b11, 1, 0).unwrap());
         assert_eq!(m.get(id).unwrap().group_bits, 0b11);
@@ -921,8 +1211,14 @@ mod tests {
     #[test]
     fn test_update_mode_and_meta() {
         let m = mem();
-        let id = m.store(Cell::new(1, "秘密").turn(1).mode(0o740)
-            .features([100; FACTOR_DIM])).unwrap();
+        let id = m
+            .store(
+                Cell::new(1, "秘密")
+                    .turn(1)
+                    .mode(0o740)
+                    .features([100; FACTOR_DIM]),
+            )
+            .unwrap();
 
         assert!(m.update_mode(id, 0o744, 1, 0).unwrap());
         assert_eq!(m.get(id).unwrap().mode, 0o744);
@@ -934,8 +1230,14 @@ mod tests {
     #[test]
     fn test_update_denied_on_readonly() {
         let m = mem();
-        let id = m.store(Cell::new(1, "保護").turn(1).mode(0o444)
-            .features([100; FACTOR_DIM])).unwrap();
+        let id = m
+            .store(
+                Cell::new(1, "保護")
+                    .turn(1)
+                    .mode(0o444)
+                    .features([100; FACTOR_DIM]),
+            )
+            .unwrap();
 
         assert!(!m.update_group_bits(id, 0b11, 1, 0).unwrap());
         assert!(!m.update_mode(id, 0o744, 1, 0).unwrap());
@@ -947,13 +1249,17 @@ mod tests {
     #[test]
     fn test_deferred_scoring() {
         let m = mem();
-        let id = m.store(Cell::new(1, "未スコアリング").turn(1).mode(0o744).price(80)).unwrap();
+        let id = m
+            .store(Cell::new(1, "未スコアリング").turn(1).mode(0o744).price(80))
+            .unwrap();
 
         let unscored = m.get_unscored().unwrap();
         assert_eq!(unscored.len(), 1);
         assert_eq!(unscored[0].id, id);
 
-        let features = [100, 200, 50, 150, 80, 120, 90, 170, 60, 130, 40, 110, 70, 160, 30, 140];
+        let features = [
+            100, 200, 50, 150, 80, 120, 90, 170, 60, 130, 40, 110, 70, 160, 30, 140,
+        ];
         m.set_features(id, features).unwrap();
 
         assert!(m.get_unscored().unwrap().is_empty());
@@ -961,7 +1267,12 @@ mod tests {
         let cell = m.get(id).unwrap();
         assert_eq!(cell.features, features);
 
-        let results = m.search(features, 1, 0).current_turn(1).limit(5).exec().unwrap();
+        let results = m
+            .search(features, 1, 0)
+            .current_turn(1)
+            .limit(5)
+            .exec()
+            .unwrap();
         assert_eq!(results.len(), 1);
     }
 
@@ -969,9 +1280,14 @@ mod tests {
     fn test_set_features_already_scored() {
         let m = mem();
         let f = [100; FACTOR_DIM];
-        let id = m.store(Cell::new(1, "スコアリング済み").turn(1).features(f)).unwrap();
+        let id = m
+            .store(Cell::new(1, "スコアリング済み").turn(1).features(f))
+            .unwrap();
 
-        assert!(matches!(m.set_features(id, [200; FACTOR_DIM]), Err(MxBSError::AlreadyScored(_))));
+        assert!(matches!(
+            m.set_features(id, [200; FACTOR_DIM]),
+            Err(MxBSError::AlreadyScored(_))
+        ));
         assert_eq!(m.get(id).unwrap().features, f);
     }
 
@@ -981,7 +1297,8 @@ mod tests {
         m.store(Cell::new(1, "ターン3").turn(3)).unwrap();
         m.store(Cell::new(1, "ターン1").turn(1)).unwrap();
         m.store(Cell::new(1, "ターン2").turn(2)).unwrap();
-        m.store(Cell::new(1, "済み").turn(0).features([100; FACTOR_DIM])).unwrap();
+        m.store(Cell::new(1, "済み").turn(0).features([100; FACTOR_DIM]))
+            .unwrap();
 
         let unscored = m.get_unscored().unwrap();
         assert_eq!(unscored.len(), 3);
@@ -995,7 +1312,8 @@ mod tests {
         let m = mem();
         m.store(Cell::new(1, "未1").turn(1)).unwrap();
         m.store(Cell::new(1, "未2").turn(1)).unwrap();
-        m.store(Cell::new(1, "済").turn(1).features([100; FACTOR_DIM])).unwrap();
+        m.store(Cell::new(1, "済").turn(1).features([100; FACTOR_DIM]))
+            .unwrap();
 
         let s = m.stats().unwrap();
         assert_eq!(s.total, 3);
@@ -1007,7 +1325,14 @@ mod tests {
     fn test_save_and_reload() {
         let m = mem();
         let f = [100; FACTOR_DIM];
-        m.store(Cell::new(1, "保存テスト").turn(1).mode(0o744).price(80).features(f)).unwrap();
+        m.store(
+            Cell::new(1, "保存テスト")
+                .turn(1)
+                .mode(0o744)
+                .price(80)
+                .features(f),
+        )
+        .unwrap();
 
         let tmp = "/tmp/mxbs_test_save.db";
         m.save_to(tmp).unwrap();
@@ -1027,7 +1352,10 @@ mod tests {
         assert_eq!(m.meta_get("factor_dim").unwrap(), Some("16".to_string()));
         assert_eq!(m.meta_get("nonexistent").unwrap(), None);
         m.meta_set("test_key", "test_value").unwrap();
-        assert_eq!(m.meta_get("test_key").unwrap(), Some("test_value".to_string()));
+        assert_eq!(
+            m.meta_get("test_key").unwrap(),
+            Some("test_value".to_string())
+        );
         m.meta_set("test_key", "updated").unwrap();
         assert_eq!(m.meta_get("test_key").unwrap(), Some("updated".to_string()));
     }
@@ -1035,6 +1363,9 @@ mod tests {
     #[test]
     fn test_set_features_not_found() {
         let m = mem();
-        assert!(matches!(m.set_features(999, [100; FACTOR_DIM]), Err(MxBSError::NotFound(999))));
+        assert!(matches!(
+            m.set_features(999, [100; FACTOR_DIM]),
+            Err(MxBSError::NotFound(999))
+        ));
     }
 }

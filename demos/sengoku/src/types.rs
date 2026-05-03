@@ -46,7 +46,12 @@ pub struct Mood {
 
 impl Default for Mood {
     fn default() -> Self {
-        Mood { aggression: 0.5, desperation: 0.5, confidence: 0.5, diplomacy: 0.5 }
+        Mood {
+            aggression: 0.5,
+            desperation: 0.5,
+            confidence: 0.5,
+            diplomacy: 0.5,
+        }
     }
 }
 

@@ -1,5 +1,5 @@
+use crate::{Cell, DreamResult, FACTOR_DIM, MxBS, MxBSError, SearchResult};
 use std::collections::HashMap;
-use crate::{MxBS, Cell, SearchResult, DreamResult, MxBSError, FACTOR_DIM};
 
 #[derive(Clone)]
 pub struct AgentRegistry {
@@ -9,7 +9,9 @@ pub struct AgentRegistry {
 }
 
 impl Default for AgentRegistry {
-    fn default() -> Self { Self::new() }
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl AgentRegistry {
@@ -28,7 +30,8 @@ impl AgentRegistry {
         }
         let bit = 1u64 << index;
         let owner_id = index as u32;
-        self.agents.push((id.to_string(), name.to_string(), bit, owner_id));
+        self.agents
+            .push((id.to_string(), name.to_string(), bit, owner_id));
         self.id_to_index.insert(id.to_string(), index);
         self.all_bits |= bit;
         Ok(bit)
@@ -51,10 +54,16 @@ impl AgentRegistry {
     }
 
     pub fn store_public(
-        &self, mxbs: &MxBS, turn: u32, agent_id: &str,
-        text: &str, features: [u8; FACTOR_DIM], price: u8,
+        &self,
+        mxbs: &MxBS,
+        turn: u32,
+        agent_id: &str,
+        text: &str,
+        features: [u8; FACTOR_DIM],
+        price: u8,
     ) -> Result<u64, MxBSError> {
-        let owner = self.owner_id(agent_id)
+        let owner = self
+            .owner_id(agent_id)
             .ok_or_else(|| MxBSError::AgentNotFound(agent_id.to_string()))?;
         mxbs.store(
             Cell::new(owner, text)
@@ -62,15 +71,21 @@ impl AgentRegistry {
                 .group_bits(self.all_bits)
                 .mode(0o744)
                 .price(price)
-                .features(features)
+                .features(features),
         )
     }
 
     pub fn store_private(
-        &self, mxbs: &MxBS, turn: u32, agent_id: &str,
-        text: &str, features: [u8; FACTOR_DIM], price: u8,
+        &self,
+        mxbs: &MxBS,
+        turn: u32,
+        agent_id: &str,
+        text: &str,
+        features: [u8; FACTOR_DIM],
+        price: u8,
     ) -> Result<u64, MxBSError> {
-        let owner = self.owner_id(agent_id)
+        let owner = self
+            .owner_id(agent_id)
             .ok_or_else(|| MxBSError::AgentNotFound(agent_id.to_string()))?;
         let bit = self.bit(agent_id).unwrap();
         mxbs.store(
@@ -79,24 +94,34 @@ impl AgentRegistry {
                 .group_bits(bit)
                 .mode(0o700)
                 .price(price)
-                .features(features)
+                .features(features),
         )
     }
 
     pub fn search(
-        &self, mxbs: &MxBS, agent_id: &str,
-        query: [u8; FACTOR_DIM], current_turn: u32,
+        &self,
+        mxbs: &MxBS,
+        agent_id: &str,
+        query: [u8; FACTOR_DIM],
+        current_turn: u32,
     ) -> Result<Vec<SearchResult>, MxBSError> {
-        let owner = self.owner_id(agent_id)
+        let owner = self
+            .owner_id(agent_id)
             .ok_or_else(|| MxBSError::AgentNotFound(agent_id.to_string()))?;
         let bit = self.bit(agent_id).unwrap();
-        mxbs.search(query, owner, bit).current_turn(current_turn).exec()
+        mxbs.search(query, owner, bit)
+            .current_turn(current_turn)
+            .exec()
     }
 
     pub fn dream(
-        &self, mxbs: &MxBS, agent_id: &str, current_turn: u32,
+        &self,
+        mxbs: &MxBS,
+        agent_id: &str,
+        current_turn: u32,
     ) -> Result<Vec<DreamResult>, MxBSError> {
-        let owner = self.owner_id(agent_id)
+        let owner = self
+            .owner_id(agent_id)
             .ok_or_else(|| MxBSError::AgentNotFound(agent_id.to_string()))?;
         let bit = self.bit(agent_id).unwrap();
         mxbs.dream(owner, bit).current_turn(current_turn).exec()
@@ -106,7 +131,7 @@ impl AgentRegistry {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{MxBS, MxBSConfig, FACTOR_DIM};
+    use crate::{FACTOR_DIM, MxBS, MxBSConfig};
 
     #[test]
     fn test_agent_registry_basics() {
@@ -130,8 +155,10 @@ mod tests {
         let mxbs = MxBS::open(":memory:", MxBSConfig::default()).unwrap();
         let f = [100; FACTOR_DIM];
 
-        reg.store_public(&mxbs, 1, "teson", "公開情報", f, 80).unwrap();
-        reg.store_private(&mxbs, 1, "teson", "内なる声", f, 120).unwrap();
+        reg.store_public(&mxbs, 1, "teson", "公開情報", f, 80)
+            .unwrap();
+        reg.store_private(&mxbs, 1, "teson", "内なる声", f, 120)
+            .unwrap();
 
         let results = reg.search(&mxbs, "teson", f, 1).unwrap();
         assert_eq!(results.len(), 2);
@@ -145,6 +172,9 @@ mod tests {
     fn test_agent_not_found() {
         let reg = AgentRegistry::new();
         let mxbs = MxBS::open(":memory:", MxBSConfig::default()).unwrap();
-        assert!(reg.store_public(&mxbs, 1, "nobody", "test", [0; FACTOR_DIM], 80).is_err());
+        assert!(
+            reg.store_public(&mxbs, 1, "nobody", "test", [0; FACTOR_DIM], 80)
+                .is_err()
+        );
     }
 }

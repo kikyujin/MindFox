@@ -1,6 +1,6 @@
-use std::collections::HashMap;
-use crate::types::*;
 use crate::scenario::*;
+use crate::types::*;
+use std::collections::HashMap;
 
 pub enum GameEnd {
     PlayerDead,
@@ -11,9 +11,13 @@ pub enum GameEnd {
 
 pub fn process_economy(state: &mut GameState, defs: &HashMap<CountryId, CountryDef>) {
     for (_id, cs) in state.countries.iter_mut() {
-        if !cs.alive { continue; }
+        if !cs.alive {
+            continue;
+        }
 
-        let income: u32 = cs.territories.iter()
+        let income: u32 = cs
+            .territories
+            .iter()
             .map(|tid| defs[tid].base_kokuryoku)
             .sum();
         cs.gold += income as i32;
@@ -36,10 +40,7 @@ pub fn conscript(cs: &mut CountryState, kokuryoku: u32) {
     cs.troops += gain;
 }
 
-pub fn resolve_alliances(
-    state: &mut GameState,
-    proposals: &[(CountryId, CountryId, bool)],
-) {
+pub fn resolve_alliances(state: &mut GameState, proposals: &[(CountryId, CountryId, bool)]) {
     for cs in state.countries.values_mut() {
         cs.allies.clear();
     }
@@ -57,7 +58,8 @@ pub fn resolve_battles(
 ) -> Vec<BattleResult> {
     let mut results = Vec::new();
 
-    let valid_attacks: Vec<(CountryId, CountryId)> = attacks.iter()
+    let valid_attacks: Vec<(CountryId, CountryId)> = attacks
+        .iter()
         .filter(|(a, d)| !state.countries[a].allies.contains(d))
         .cloned()
         .collect();
@@ -107,19 +109,29 @@ fn resolve_wild_battle(state: &mut GameState, a: CountryId, b: CountryId) -> Bat
     let b_alive = cs_b.troops > 0;
 
     let (conquered, conqueror) = match (a_alive, b_alive) {
-        (true, false) => { conquer(state, a, b); (Some(b), Some(a)) },
-        (false, true) => { conquer(state, b, a); (Some(a), Some(b)) },
+        (true, false) => {
+            conquer(state, a, b);
+            (Some(b), Some(a))
+        }
+        (false, true) => {
+            conquer(state, b, a);
+            (Some(a), Some(b))
+        }
         (false, false) => {
             conquer(state, b, a);
             (Some(a), Some(b))
-        },
+        }
         _ => (None, None),
     };
 
     BattleResult {
-        attacker: a, defender: b, is_wild: true,
-        att_losses: a_loss, def_losses: b_loss,
-        conquered, conqueror,
+        attacker: a,
+        defender: b,
+        is_wild: true,
+        att_losses: a_loss,
+        def_losses: b_loss,
+        conquered,
+        conqueror,
     }
 }
 
@@ -147,16 +159,24 @@ fn resolve_invasion(state: &mut GameState, att: CountryId, def: CountryId) -> Ba
     };
 
     BattleResult {
-        attacker: att, defender: def, is_wild: false,
-        att_losses: a_loss, def_losses: d_loss,
-        conquered, conqueror,
+        attacker: att,
+        defender: def,
+        is_wild: false,
+        att_losses: a_loss,
+        def_losses: d_loss,
+        conquered,
+        conqueror,
     }
 }
 
 fn conquer(state: &mut GameState, winner: CountryId, loser: CountryId) {
     let loser_territories: Vec<CountryId> = state.countries[&loser].territories.clone();
-    state.countries.get_mut(&winner).unwrap()
-        .territories.extend(loser_territories);
+    state
+        .countries
+        .get_mut(&winner)
+        .unwrap()
+        .territories
+        .extend(loser_territories);
     let cs_loser = state.countries.get_mut(&loser).unwrap();
     cs_loser.alive = false;
     cs_loser.territories.clear();
@@ -168,8 +188,10 @@ pub fn update_adjacency(
     winner: CountryId,
     loser: CountryId,
 ) {
-    let loser_neighbors: Vec<CountryId> = adjacency.get(&loser)
-        .cloned().unwrap_or_default()
+    let loser_neighbors: Vec<CountryId> = adjacency
+        .get(&loser)
+        .cloned()
+        .unwrap_or_default()
         .into_iter()
         .filter(|&n| n != winner)
         .collect();
@@ -183,9 +205,13 @@ pub fn update_adjacency(
     winner_adj.retain(|&n| n != loser);
 
     for (id, neighbors) in adjacency.iter_mut() {
-        if *id == winner || *id == loser { continue; }
+        if *id == winner || *id == loser {
+            continue;
+        }
         for n in neighbors.iter_mut() {
-            if *n == loser { *n = winner; }
+            if *n == loser {
+                *n = winner;
+            }
         }
         neighbors.dedup();
     }
@@ -193,19 +219,20 @@ pub fn update_adjacency(
     adjacency.remove(&loser);
 }
 
-pub fn killable_target(
-    state: &GameState,
-    country_id: CountryId,
-) -> Option<CountryId> {
+pub fn killable_target(state: &GameState, country_id: CountryId) -> Option<CountryId> {
     let my_troops = state.countries[&country_id].troops;
     let kill_power = my_troops * INVASION_DEF_LOSS_NUM / INVASION_DEF_LOSS_DEN;
 
-    state.adjacency.get(&country_id)?
+    state
+        .adjacency
+        .get(&country_id)?
         .iter()
         .filter(|&&n| {
             let c = &state.countries[&n];
-            c.alive && c.troops > 0 && c.troops <= kill_power
-            && !state.countries[&country_id].allies.contains(&n)
+            c.alive
+                && c.troops > 0
+                && c.troops <= kill_power
+                && !state.countries[&country_id].allies.contains(&n)
         })
         .min_by_key(|&&n| state.countries[&n].troops)
         .copied()
@@ -227,28 +254,27 @@ pub fn is_desperate(cs: &CountryState, kokuryoku_total: u32) -> bool {
     cs.gold + income - maintenance < 0
 }
 
-pub fn weakest_neighbor(
-    state: &GameState,
-    country_id: CountryId,
-) -> Option<CountryId> {
-    state.adjacency.get(&country_id)?
+pub fn weakest_neighbor(state: &GameState, country_id: CountryId) -> Option<CountryId> {
+    state
+        .adjacency
+        .get(&country_id)?
         .iter()
-        .filter(|&&n| state.countries.get(&n).map_or(false, |c| c.alive))
+        .filter(|&&n| state.countries.get(&n).is_some_and(|c| c.alive))
         .min_by_key(|&&n| state.countries[&n].troops)
         .copied()
 }
 
-pub fn free_target(
-    state: &GameState,
-    country_id: CountryId,
-) -> Option<CountryId> {
-    state.adjacency.get(&country_id)?
+pub fn free_target(state: &GameState, country_id: CountryId) -> Option<CountryId> {
+    state
+        .adjacency
+        .get(&country_id)?
         .iter()
-        .filter(|&&n| {
-            state.countries.get(&n)
-                .map_or(false, |c| c.alive && c.troops == 0)
+        .find(|&&n| {
+            state
+                .countries
+                .get(&n)
+                .is_some_and(|c| c.alive && c.troops == 0)
         })
-        .next()
         .copied()
 }
 
@@ -266,8 +292,10 @@ pub fn apply_pass_penalty(cs: &mut CountryState, daimyo_name: &str) {
         let desert = cs.troops / 20;
         if desert > 0 {
             cs.troops = cs.troops.saturating_sub(desert);
-            println!("  ⚠ {}の兵{}が「戦わぬ主君に仕える意味なし」と脱走",
-                     daimyo_name, desert);
+            println!(
+                "  ⚠ {}の兵{}が「戦わぬ主君に仕える意味なし」と脱走",
+                daimyo_name, desert
+            );
         }
     }
 }
@@ -279,21 +307,22 @@ pub fn should_attack_target(
     consecutive_passes: u32,
     mood: &Mood,
 ) -> bool {
-    if target_troops == 0 { return true; }
+    if target_troops == 0 {
+        return true;
+    }
 
     let ratio = my_troops as f32 / target_troops as f32;
 
     let base_threshold = match personality {
         Personality::Impulsive => 1.2,
-        Personality::Leader    => 1.5,
-        Personality::Analyst   => 2.0,
-        Personality::Stubborn  => 2.5,
+        Personality::Leader => 1.5,
+        Personality::Analyst => 2.0,
+        Personality::Stubborn => 2.5,
     };
 
-    let mood_adjustment =
-        (mood.aggression - 0.5) * 0.8
-      + (mood.desperation - 0.5) * 0.6
-      + (mood.confidence - 0.5) * 0.4;
+    let mood_adjustment = (mood.aggression - 0.5) * 0.8
+        + (mood.desperation - 0.5) * 0.6
+        + (mood.confidence - 0.5) * 0.4;
 
     let pass_adjustment = consecutive_passes as f32 * 0.2;
 
@@ -309,19 +338,21 @@ pub fn forced_attack_target(
     let cs = &state.countries[&country_id];
     let def = &state.defs[&country_id];
 
-    state.adjacency.get(&country_id)?
+    state
+        .adjacency
+        .get(&country_id)?
         .iter()
         .filter(|&&n| {
             let nc = &state.countries[&n];
             nc.alive
-            && !cs.allies.contains(&n)
-            && should_attack_target(
-                &def.personality,
-                cs.troops,
-                nc.troops,
-                cs.consecutive_passes,
-                mood,
-            )
+                && !cs.allies.contains(&n)
+                && should_attack_target(
+                    &def.personality,
+                    cs.troops,
+                    nc.troops,
+                    cs.consecutive_passes,
+                    mood,
+                )
         })
         .min_by_key(|&&n| state.countries[&n].troops)
         .copied()
@@ -352,15 +383,18 @@ mod tests {
         let mut defs = HashMap::new();
         let mut countries = HashMap::new();
         for d in &defs_vec {
-            countries.insert(d.id, CountryState {
-                id: d.id,
-                gold: d.initial_gold as i32,
-                troops: d.initial_troops,
-                territories: vec![d.id],
-                alive: true,
-                allies: HashSet::new(),
-                consecutive_passes: 0,
-            });
+            countries.insert(
+                d.id,
+                CountryState {
+                    id: d.id,
+                    gold: d.initial_gold as i32,
+                    troops: d.initial_troops,
+                    territories: vec![d.id],
+                    alive: true,
+                    allies: HashSet::new(),
+                    consecutive_passes: 0,
+                },
+            );
             defs.insert(d.id, d.clone());
         }
         GameState {
@@ -377,8 +411,12 @@ mod tests {
     #[test]
     fn test_conscript() {
         let mut cs = CountryState {
-            id: 5, gold: 100, troops: 78,
-            territories: vec![5], alive: true, allies: HashSet::new(),
+            id: 5,
+            gold: 100,
+            troops: 78,
+            territories: vec![5],
+            alive: true,
+            allies: HashSet::new(),
             consecutive_passes: 0,
         };
         conscript(&mut cs, 69);
@@ -463,15 +501,23 @@ mod tests {
     #[test]
     fn test_can_afford_conscript() {
         let cs = CountryState {
-            id: 5, gold: 100, troops: 50,
-            territories: vec![5], alive: true, allies: HashSet::new(),
+            id: 5,
+            gold: 100,
+            troops: 50,
+            territories: vec![5],
+            alive: true,
+            allies: HashSet::new(),
             consecutive_passes: 0,
         };
         assert!(can_afford_conscript(&cs, 60));
 
         let cs = CountryState {
-            id: 2, gold: 35, troops: 71,
-            territories: vec![2], alive: true, allies: HashSet::new(),
+            id: 2,
+            gold: 35,
+            troops: 71,
+            territories: vec![2],
+            alive: true,
+            allies: HashSet::new(),
             consecutive_passes: 0,
         };
         assert!(!can_afford_conscript(&cs, 73));
@@ -480,15 +526,23 @@ mod tests {
     #[test]
     fn test_is_desperate() {
         let cs = CountryState {
-            id: 3, gold: 0, troops: 100,
-            territories: vec![3], alive: true, allies: HashSet::new(),
+            id: 3,
+            gold: 0,
+            troops: 100,
+            territories: vec![3],
+            alive: true,
+            allies: HashSet::new(),
             consecutive_passes: 0,
         };
         assert!(is_desperate(&cs, 30));
 
         let cs = CountryState {
-            id: 5, gold: 100, troops: 78,
-            territories: vec![5], alive: true, allies: HashSet::new(),
+            id: 5,
+            gold: 100,
+            troops: 78,
+            territories: vec![5],
+            alive: true,
+            allies: HashSet::new(),
             consecutive_passes: 0,
         };
         assert!(!is_desperate(&cs, 69));
@@ -497,34 +551,73 @@ mod tests {
     #[test]
     fn test_should_attack_impulsive() {
         let neutral = Mood::default();
-        assert!(should_attack_target(&Personality::Impulsive, 147, 72, 0, &neutral));
+        assert!(should_attack_target(
+            &Personality::Impulsive,
+            147,
+            72,
+            0,
+            &neutral
+        ));
     }
 
     #[test]
     fn test_should_attack_analyst_no() {
         let neutral = Mood::default();
-        assert!(!should_attack_target(&Personality::Analyst, 127, 73, 0, &neutral));
+        assert!(!should_attack_target(
+            &Personality::Analyst,
+            127,
+            73,
+            0,
+            &neutral
+        ));
     }
 
     #[test]
     fn test_should_attack_analyst_with_passes() {
         let neutral = Mood::default();
-        assert!(should_attack_target(&Personality::Analyst, 127, 73, 2, &neutral));
+        assert!(should_attack_target(
+            &Personality::Analyst,
+            127,
+            73,
+            2,
+            &neutral
+        ));
     }
 
     #[test]
     fn test_mood_affects_attack_threshold() {
         let neutral = Mood::default();
-        let aggressive = Mood { aggression: 0.9, desperation: 0.5, confidence: 0.8, diplomacy: 0.5 };
-        assert!(!should_attack_target(&Personality::Analyst, 127, 73, 0, &neutral));
-        assert!(should_attack_target(&Personality::Analyst, 127, 73, 0, &aggressive));
+        let aggressive = Mood {
+            aggression: 0.9,
+            desperation: 0.5,
+            confidence: 0.8,
+            diplomacy: 0.5,
+        };
+        assert!(!should_attack_target(
+            &Personality::Analyst,
+            127,
+            73,
+            0,
+            &neutral
+        ));
+        assert!(should_attack_target(
+            &Personality::Analyst,
+            127,
+            73,
+            0,
+            &aggressive
+        ));
     }
 
     #[test]
     fn test_pass_penalty() {
         let mut cs = CountryState {
-            id: 1, gold: 50, troops: 100,
-            territories: vec![1], alive: true, allies: HashSet::new(),
+            id: 1,
+            gold: 50,
+            troops: 100,
+            territories: vec![1],
+            alive: true,
+            allies: HashSet::new(),
             consecutive_passes: 2,
         };
         apply_pass_penalty(&mut cs, "テスト");
@@ -534,8 +627,12 @@ mod tests {
     #[test]
     fn test_update_pass_count() {
         let mut cs = CountryState {
-            id: 1, gold: 50, troops: 100,
-            territories: vec![1], alive: true, allies: HashSet::new(),
+            id: 1,
+            gold: 50,
+            troops: 100,
+            territories: vec![1],
+            alive: true,
+            allies: HashSet::new(),
             consecutive_passes: 0,
         };
         update_pass_count(&mut cs, &[Action::Pass]);

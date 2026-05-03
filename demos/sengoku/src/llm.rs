@@ -1,5 +1,5 @@
-use serde::{Serialize, Deserialize};
 use crate::types::*;
+use serde::{Deserialize, Serialize};
 
 const OLLAMA_URL: &str = "http://localhost:11434/api/chat";
 #[allow(dead_code)]
@@ -41,13 +41,17 @@ pub async fn chat(prompt: &str) -> Result<String, Box<dyn std::error::Error>> {
         }],
         stream: false,
     };
-    let res = client.post(OLLAMA_URL)
+    let res = client
+        .post(OLLAMA_URL)
         .json(&req)
-        .send().await?
-        .json::<OllamaResponse>().await?;
+        .send()
+        .await?
+        .json::<OllamaResponse>()
+        .await?;
     Ok(res.message.content.trim().to_string())
 }
 
+#[allow(clippy::too_many_arguments)]
 pub fn build_action_prompt(
     daimyo: &str,
     personality_desc: &str,
@@ -80,12 +84,15 @@ pub fn build_action_prompt(
          金: {}\n\
          兵力: {}\n\n\
          隣国:\n",
-        daimyo, personality_desc, strategy,
-        year, territories, kokuryoku, gold, troops
+        daimyo, personality_desc, strategy, year, territories, kokuryoku, gold, troops
     );
 
     for (id, name, tr) in neighbors {
-        let ally_mark = if allies.contains(id) { " [同盟中]" } else { "" };
+        let ally_mark = if allies.contains(id) {
+            " [同盟中]"
+        } else {
+            ""
+        };
         prompt += &format!("  {}（兵力:{}）{}\n", name, tr, ally_mark);
     }
 
@@ -125,7 +132,8 @@ pub fn build_action_prompt(
     if consecutive_passes >= 1 {
         prompt += &format!(
             "{}. 何もしない（⚠ {}ターン連続で無行動。兵の士気が低下する）\n",
-            idx, consecutive_passes + 1
+            idx,
+            consecutive_passes + 1
         );
     } else {
         prompt += &format!("{}. 何もしない\n", idx);
@@ -137,6 +145,7 @@ pub fn build_action_prompt(
     (prompt, options)
 }
 
+#[allow(clippy::too_many_arguments)]
 pub fn build_alliance_response_prompt(
     daimyo: &str,
     personality_desc: &str,
@@ -159,8 +168,14 @@ pub fn build_alliance_response_prompt(
          {}があなたに同盟を申し込んでいる。\n\n\
          あなた: 兵力{}, 金{}\n\
          {}: 兵力{}\n",
-        daimyo, personality_desc, strategy, proposer_name,
-        my_troops, my_gold, proposer_name, proposer_troops
+        daimyo,
+        personality_desc,
+        strategy,
+        proposer_name,
+        my_troops,
+        my_gold,
+        proposer_name,
+        proposer_troops
     );
     if !memories.is_empty() {
         prompt += "\n記憶:\n";
@@ -198,7 +213,8 @@ pub fn build_scoring_prompt(preset_json: &str, text: &str) -> String {
     let preset: serde_json::Value = serde_json::from_str(preset_json).unwrap();
     let axes = preset["axes"].as_array().unwrap();
 
-    let mut prompt = "以下のテキストを16因子でスコアリングせよ。各因子は0〜255の整数。\n\n因子:\n".to_string();
+    let mut prompt =
+        "以下のテキストを16因子でスコアリングせよ。各因子は0〜255の整数。\n\n因子:\n".to_string();
     for ax in axes {
         let idx = ax["index"].as_u64().unwrap();
         let name = ax["name"].as_str().unwrap();
@@ -244,8 +260,11 @@ pub fn situation_vector(
 ) -> [u8; 16] {
     let mut v = [128u8; 16];
 
-    let threat = if troops == 0 { 255 }
-        else { (255 * neighbors_max_troops / (troops + neighbors_max_troops)).min(255) as u8 };
+    let threat = if troops == 0 {
+        255
+    } else {
+        (255 * neighbors_max_troops / (troops + neighbors_max_troops)).min(255) as u8
+    };
     v[11] = threat;
     v[13] = 255 - threat;
     v[10] = threat.saturating_sub(30);
@@ -257,9 +276,13 @@ pub fn situation_vector(
         Personality::Stubborn => 80,
     };
 
-    v[8] = if gold > kokuryoku as i32 * 2 { 200 }
-           else if gold > 0 { 150 }
-           else { 50 };
+    v[8] = if gold > kokuryoku as i32 * 2 {
+        200
+    } else if gold > 0 {
+        150
+    } else {
+        50
+    };
 
     v
 }
@@ -271,15 +294,12 @@ pub fn build_inner_voice_prompt(daimyo: &str, situation_summary: &str) -> String
     )
 }
 
-pub fn build_batch_scoring_prompt(
-    preset_json: &str,
-    texts: &[(u64, String)],
-) -> String {
+pub fn build_batch_scoring_prompt(preset_json: &str, texts: &[(u64, String)]) -> String {
     let preset: serde_json::Value = serde_json::from_str(preset_json).unwrap();
     let axes = preset["axes"].as_array().unwrap();
 
     let mut prompt = String::from(
-        "以下のテキスト群を16因子でスコアリングせよ。各因子は0〜255の整数。\n\n因子:\n"
+        "以下のテキスト群を16因子でスコアリングせよ。各因子は0〜255の整数。\n\n因子:\n",
     );
     for ax in axes {
         let idx = ax["index"].as_u64().unwrap();
@@ -307,7 +327,9 @@ pub fn parse_batch_scores(response: &str, expected_count: usize) -> Vec<[u8; 16]
 
     for line in response.lines() {
         let line = line.trim();
-        if line.is_empty() { continue; }
+        if line.is_empty() {
+            continue;
+        }
 
         let scores_part = if let Some(pos) = line.find(':') {
             &line[pos + 1..]
@@ -336,26 +358,22 @@ pub fn parse_batch_scores(response: &str, expected_count: usize) -> Vec<[u8; 16]
     results
 }
 
-async fn batch_score_chunk(
-    chunk: &[(u64, String)],
-    preset_json: &str,
-) -> Vec<(u64, [u8; 16])> {
+async fn batch_score_chunk(chunk: &[(u64, String)], preset_json: &str) -> Vec<(u64, [u8; 16])> {
     let prompt = build_batch_scoring_prompt(preset_json, chunk);
     match chat(&prompt).await {
         Ok(response) => {
             let scores = parse_batch_scores(&response, chunk.len());
-            chunk.iter().zip(scores).map(|((id, _), f)| (*id, f)).collect()
+            chunk
+                .iter()
+                .zip(scores)
+                .map(|((id, _), f)| (*id, f))
+                .collect()
         }
-        Err(_) => {
-            chunk.iter().map(|(id, _)| (*id, [128u8; 16])).collect()
-        }
+        Err(_) => chunk.iter().map(|(id, _)| (*id, [128u8; 16])).collect(),
     }
 }
 
-pub async fn batch_score(
-    texts: &[(u64, String)],
-    preset_json: &str,
-) -> Vec<(u64, [u8; 16])> {
+pub async fn batch_score(texts: &[(u64, String)], preset_json: &str) -> Vec<(u64, [u8; 16])> {
     let mut results = Vec::new();
     for chunk in texts.chunks(4) {
         let features_list = batch_score_chunk(chunk, preset_json).await;
@@ -390,11 +408,19 @@ mod tests {
     fn test_build_action_prompt() {
         let neighbors = vec![(3u32, "斉藤義竜", 38u32)];
         let (prompt, options) = build_action_prompt(
-            "織田信長", "攻め気。兵力が隣国を上回っていれば迷わず攻撃する。",
+            "織田信長",
+            "攻め気。兵力が隣国を上回っていれば迷わず攻撃する。",
             "最弱の斉藤を早期に併合せよ。",
-            1560, "尾張", 69, 100, 78,
-            &neighbors, &[], &[],
-            true, 0,
+            1560,
+            "尾張",
+            69,
+            100,
+            78,
+            &neighbors,
+            &[],
+            &[],
+            true,
+            0,
         );
         assert!(prompt.contains("織田信長"));
         assert!(prompt.contains("【性格】"));

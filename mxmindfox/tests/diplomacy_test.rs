@@ -1,8 +1,9 @@
-use mxmindfox::*;
 use mxbs::Cell;
+use mxmindfox::*;
 
 fn preset_with_trust() -> MoodPreset {
-    MoodPreset::from_json(r#"{
+    MoodPreset::from_json(
+        r#"{
         "name": "test", "version": "1.0",
         "axes": [
             {"name":"trust","positive_factors":[2],"negative_factors":[3],
@@ -11,17 +12,22 @@ fn preset_with_trust() -> MoodPreset {
         "archetype_baselines": {
             "friendly": {"trust": 0.3}
         }
-    }"#).unwrap()
+    }"#,
+    )
+    .unwrap()
 }
 
 fn preset_no_trust() -> MoodPreset {
-    MoodPreset::from_json(r#"{
+    MoodPreset::from_json(
+        r#"{
         "name": "test", "version": "1.0",
         "axes": [
             {"name":"temperature","positive_factors":[0],"negative_factors":[],
              "default_value":0.05,"clamp_min":0.0,"clamp_max":1.0}
         ]
-    }"#).unwrap()
+    }"#,
+    )
+    .unwrap()
 }
 
 fn make_cell(features: [u8; 16]) -> Cell {

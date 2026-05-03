@@ -1,4 +1,4 @@
-use crate::{MxBSError, FACTOR_DIM};
+use crate::{FACTOR_DIM, MxBSError};
 
 #[derive(Debug, Clone)]
 pub struct Axis {
@@ -19,28 +19,41 @@ impl Preset {
         let v: serde_json::Value = serde_json::from_str(json_str)
             .map_err(|e| MxBSError::Io(format!("JSON parse error: {e}")))?;
 
-        let name = v["name"].as_str()
+        let name = v["name"]
+            .as_str()
             .ok_or_else(|| MxBSError::Io("missing 'name' field".into()))?
             .to_string();
 
-        let axes_arr = v["axes"].as_array()
+        let axes_arr = v["axes"]
+            .as_array()
             .ok_or_else(|| MxBSError::Io("missing 'axes' array".into()))?;
 
         if axes_arr.len() != FACTOR_DIM {
-            return Err(MxBSError::Io(format!("expected 16 axes, got {}", axes_arr.len())));
+            return Err(MxBSError::Io(format!(
+                "expected 16 axes, got {}",
+                axes_arr.len()
+            )));
         }
 
         let mut axes = Vec::with_capacity(FACTOR_DIM);
         for ax in axes_arr {
             axes.push(Axis {
-                index: ax["index"].as_u64()
-                    .ok_or_else(|| MxBSError::Io("axis missing 'index'".into()))? as usize,
-                name: ax["name"].as_str()
-                    .ok_or_else(|| MxBSError::Io("axis missing 'name'".into()))?.to_string(),
-                low: ax["low"].as_str()
-                    .ok_or_else(|| MxBSError::Io("axis missing 'low'".into()))?.to_string(),
-                high: ax["high"].as_str()
-                    .ok_or_else(|| MxBSError::Io("axis missing 'high'".into()))?.to_string(),
+                index: ax["index"]
+                    .as_u64()
+                    .ok_or_else(|| MxBSError::Io("axis missing 'index'".into()))?
+                    as usize,
+                name: ax["name"]
+                    .as_str()
+                    .ok_or_else(|| MxBSError::Io("axis missing 'name'".into()))?
+                    .to_string(),
+                low: ax["low"]
+                    .as_str()
+                    .ok_or_else(|| MxBSError::Io("axis missing 'low'".into()))?
+                    .to_string(),
+                high: ax["high"]
+                    .as_str()
+                    .ok_or_else(|| MxBSError::Io("axis missing 'high'".into()))?
+                    .to_string(),
             });
         }
 
@@ -48,8 +61,7 @@ impl Preset {
     }
 
     pub fn from_file(path: &str) -> Result<Self, MxBSError> {
-        let content = std::fs::read_to_string(path)
-            .map_err(|e| MxBSError::Io(e.to_string()))?;
+        let content = std::fs::read_to_string(path).map_err(|e| MxBSError::Io(e.to_string()))?;
         Self::from_json(&content)
     }
 
@@ -58,7 +70,8 @@ impl Preset {
         let mut axes_names = Vec::new();
         for ax in &self.axes {
             axes_desc.push_str(&format!(
-                "  {:2}: {} (0={}, 255={})\n", ax.index, ax.name, ax.low, ax.high
+                "  {:2}: {} (0={}, 255={})\n",
+                ax.index, ax.name, ax.low, ax.high
             ));
             axes_names.push(ax.name.as_str());
         }
@@ -86,16 +99,17 @@ impl Preset {
 }
 
 pub fn parse_scores(response: &str) -> Option<[u8; FACTOR_DIM]> {
-    let cleaned = response.trim()
-        .replace("```json", "").replace("```", "");
+    let cleaned = response.trim().replace("```json", "").replace("```", "");
     let cleaned = cleaned.trim();
 
     if let Some(arr) = extract_array(cleaned)
-        && let Some(result) = normalize_to_16(&arr) {
+        && let Some(result) = normalize_to_16(&arr)
+    {
         return Some(result);
     }
 
-    let numbers: Vec<i32> = cleaned.split(|c: char| !c.is_ascii_digit() && c != '-')
+    let numbers: Vec<i32> = cleaned
+        .split(|c: char| !c.is_ascii_digit() && c != '-')
         .filter_map(|s| s.parse::<i32>().ok())
         .filter(|&n| (0..=255).contains(&n))
         .collect();
@@ -110,7 +124,8 @@ fn extract_array(s: &str) -> Option<Vec<i32>> {
     let start = s.find('[')?;
     let end = s[start..].find(']')? + start;
     let inner = &s[start + 1..end];
-    let nums: Vec<i32> = inner.split(',')
+    let nums: Vec<i32> = inner
+        .split(',')
         .filter_map(|part| part.trim().parse::<i32>().ok())
         .collect();
     if nums.len() >= 12 { Some(nums) } else { None }
@@ -137,7 +152,9 @@ mod tests {
 
     #[test]
     fn test_parse_scores_clean_json() {
-        let r = parse_scores("[100, 200, 50, 150, 80, 120, 90, 170, 60, 130, 40, 110, 70, 160, 30, 140]");
+        let r = parse_scores(
+            "[100, 200, 50, 150, 80, 120, 90, 170, 60, 130, 40, 110, 70, 160, 30, 140]",
+        );
         assert!(r.is_some());
         let f = r.unwrap();
         assert_eq!(f[0], 100);
@@ -146,7 +163,9 @@ mod tests {
 
     #[test]
     fn test_parse_scores_with_codeblock() {
-        let r = parse_scores("```json\n[100, 200, 50, 150, 80, 120, 90, 170, 60, 130, 40, 110, 70, 160, 30, 140]\n```");
+        let r = parse_scores(
+            "```json\n[100, 200, 50, 150, 80, 120, 90, 170, 60, 130, 40, 110, 70, 160, 30, 140]\n```",
+        );
         assert!(r.is_some());
     }
 
@@ -162,7 +181,9 @@ mod tests {
 
     #[test]
     fn test_parse_scores_clamp() {
-        let r = parse_scores("[300, -10, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128]");
+        let r = parse_scores(
+            "[300, -10, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128]",
+        );
         assert!(r.is_some());
         let f = r.unwrap();
         assert_eq!(f[0], 255);

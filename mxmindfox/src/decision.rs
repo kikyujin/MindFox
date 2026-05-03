@@ -1,12 +1,7 @@
 use rand::Rng;
 
 /// Bernoulli decision with temperature.
-pub fn remember(
-    score: f32,
-    threshold: f32,
-    temperature: f32,
-    rng: &mut impl Rng,
-) -> bool {
+pub fn remember(score: f32, threshold: f32, temperature: f32, rng: &mut impl Rng) -> bool {
     if temperature <= 0.0 {
         return score >= threshold;
     }
@@ -26,7 +21,8 @@ pub fn sample<'a, T>(
     }
 
     if temperature <= 0.0 {
-        return candidates.iter()
+        return candidates
+            .iter()
             .max_by(|a, b| a.1.partial_cmp(&b.1).unwrap_or(std::cmp::Ordering::Equal))
             .map(|(t, _)| t);
     }

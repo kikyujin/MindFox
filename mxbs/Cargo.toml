@@ -1,10 +1,14 @@
 [package]
 name = "mxbs"
-description = "Multitapps Extended Brain System — Factor-vector memory management for game NPCs"
-version.workspace = true
+version = "0.3.1"
+description = "Factor-vector memory engine for game NPCs — 16-byte vectors, SQLite only, no embeddings"
+keywords = ["gamedev", "npc", "memory", "sqlite", "ai"]
+categories = ["game-development", "database"]
+readme = "README.md"
 edition.workspace = true
 license.workspace = true
 repository.workspace = true
+authors.workspace = true
 
 [lib]
 crate-type = ["lib", "cdylib"]

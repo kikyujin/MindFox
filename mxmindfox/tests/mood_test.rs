@@ -1,8 +1,9 @@
-use mxmindfox::*;
 use mxbs::Cell;
+use mxmindfox::*;
 
 fn make_preset() -> MoodPreset {
-    MoodPreset::from_json(r#"{
+    MoodPreset::from_json(
+        r#"{
         "name": "test",
         "version": "1.0",
         "axes": [
@@ -27,7 +28,9 @@ fn make_preset() -> MoodPreset {
             "analyst": {"temperature": 0.02},
             "impulsive": {"temperature": 0.20}
         }
-    }"#).unwrap()
+    }"#,
+    )
+    .unwrap()
 }
 
 fn make_cell(features: [u8; 16]) -> Cell {
@@ -114,7 +117,9 @@ fn compute_mood_positive_factor_increases_axis() {
 #[test]
 fn compute_mood_clamps_to_range() {
     let preset = make_preset();
-    let cells: Vec<Cell> = (0..100).map(|_| make_cell([255, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])).collect();
+    let cells: Vec<Cell> = (0..100)
+        .map(|_| make_cell([255, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]))
+        .collect();
     let mood = compute_mood(&cells, &preset, None);
     assert!(mood.get("temperature").unwrap() <= 1.0);
 }
@@ -131,15 +136,19 @@ fn compute_mood_negative_factor_decreases_axis() {
 fn compute_mood_multiple_cells_averaged() {
     let preset = make_preset();
     let mood_one = compute_mood(
-        &[make_cell([255, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])],
-        &preset, None,
+        &[make_cell([
+            255, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        ])],
+        &preset,
+        None,
     );
     let mood_two = compute_mood(
         &[
             make_cell([255, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]),
             make_cell([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]),
         ],
-        &preset, None,
+        &preset,
+        None,
     );
     assert!(mood_two.get("temperature").unwrap() < mood_one.get("temperature").unwrap());
 }

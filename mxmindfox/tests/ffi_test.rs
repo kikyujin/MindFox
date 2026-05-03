@@ -4,20 +4,25 @@ use std::ptr;
 use mxmindfox::ffi::*;
 
 fn load_test_preset() -> *mut std::ffi::c_void {
-    let json = CString::new(r#"{
+    let json = CString::new(
+        r#"{
         "name": "test", "version": "1.0",
         "axes": [
             {"name":"temperature","positive_factors":[0],"negative_factors":[1],
              "default_value":0.05,"clamp_min":0.0,"clamp_max":1.0}
         ],
         "archetype_baselines": {"impulsive": {"temperature": 0.20}}
-    }"#).unwrap();
+    }"#,
+    )
+    .unwrap();
     unsafe { mxmf_preset_load_json(json.as_ptr()) }
 }
 
 #[test]
 fn null_preset_free_no_crash() {
-    unsafe { mxmf_preset_free(ptr::null_mut()); }
+    unsafe {
+        mxmf_preset_free(ptr::null_mut());
+    }
 }
 
 #[test]
@@ -41,8 +46,12 @@ fn preset_load_to_json_roundtrip() {
     assert!(!json_ptr.is_null());
     let json = unsafe { CStr::from_ptr(json_ptr) }.to_str().unwrap();
     assert!(json.contains("temperature"));
-    unsafe { mxmf_str_free(json_ptr); }
-    unsafe { mxmf_preset_free(p); }
+    unsafe {
+        mxmf_str_free(json_ptr);
+    }
+    unsafe {
+        mxmf_preset_free(p);
+    }
 }
 
 #[test]
@@ -55,8 +64,12 @@ fn compute_mood_empty_cells_archetype_baseline() {
     let result = unsafe { CStr::from_ptr(result_ptr) }.to_str().unwrap();
     assert!(result.contains("temperature"));
     assert!(result.contains("0.2"));
-    unsafe { mxmf_str_free(result_ptr); }
-    unsafe { mxmf_preset_free(p); }
+    unsafe {
+        mxmf_str_free(result_ptr);
+    }
+    unsafe {
+        mxmf_preset_free(p);
+    }
 }
 
 #[test]
@@ -88,7 +101,10 @@ fn decision_sample_empty_returns_neg1() {
 
 #[test]
 fn decision_sample_t0_argmax() {
-    let json = CString::new(r#"[{"index":0,"score":0.1},{"index":1,"score":0.9},{"index":2,"score":0.5}]"#).unwrap();
+    let json = CString::new(
+        r#"[{"index":0,"score":0.1},{"index":1,"score":0.9},{"index":2,"score":0.5}]"#,
+    )
+    .unwrap();
     let result = unsafe { mxmf_decision_sample(json.as_ptr(), 0.0, 42) };
     assert_eq!(result, 1);
 }
@@ -103,5 +119,7 @@ fn version_not_null() {
 
 #[test]
 fn null_str_free_no_crash() {
-    unsafe { mxmf_str_free(ptr::null_mut()); }
+    unsafe {
+        mxmf_str_free(ptr::null_mut());
+    }
 }

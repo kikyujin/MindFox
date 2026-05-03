@@ -7,10 +7,10 @@ members = [
 ]
 
 [workspace.package]
-version = "0.1.0"
 edition = "2024"
-license = "MIT OR Apache-2.0"
-repository = "https://github.com/multitapps/mxmindfox"
+license = "MIT"
+repository = "https://github.com/kikyujin/MindFox"
+authors = ["Mahito KIDA <contact@multitapps.com>"]
 
 [workspace.dependencies]
 rusqlite = { version = "0.32", features = ["bundled", "backup"] }

@@ -374,7 +374,7 @@ MxBS
 2. **mxmf_concept.md** — MxMindFox のオーケストレーション設計
 3. **Rust crate 実装** — MxBS + MxMindFox の Rust ネイティブ実装
 4. **preset_guide.md** — GM 向けプリセット設計ガイド
-5. **HP デモ** — Hawaii 2035 を MxBS で走らせたデモをサイトに掲載
+5. **(planned demo page)** — MxBS を使ったデモをサイトに掲載
 
 ---
 

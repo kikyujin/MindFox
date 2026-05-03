@@ -30,15 +30,27 @@ fn test_ffi_store_and_search() {
 
         let text = CString::new("test memory").unwrap();
         let meta = CString::new("{}").unwrap();
-        let features: [u8; 16] = [200, 100, 50, 150, 80, 60, 120, 140, 90, 50, 160, 100, 70, 130, 90, 110];
+        let features: [u8; 16] = [
+            200, 100, 50, 150, 80, 60, 120, 140, 90, 50, 160, 100, 70, 130, 90, 110,
+        ];
 
         let cell_id = mxbs::ffi::mxbs_store(
-            handle, 1, 1, 1, 0x01, 0o744, 100,
-            features.as_ptr(), text.as_ptr(), meta.as_ptr(),
+            handle,
+            1,
+            1,
+            1,
+            0x01,
+            0o744,
+            100,
+            features.as_ptr(),
+            text.as_ptr(),
+            meta.as_ptr(),
         );
         assert!(cell_id > 0);
 
-        let query: [u8; 16] = [200, 100, 50, 150, 80, 60, 120, 140, 90, 50, 160, 100, 70, 130, 90, 110];
+        let query: [u8; 16] = [
+            200, 100, 50, 150, 80, 60, 120, 140, 90, 50, 160, 100, 70, 130, 90, 110,
+        ];
         let result_ptr = mxbs::ffi::mxbs_search(handle, query.as_ptr(), 1, 0x01, 1, 5);
         assert!(!result_ptr.is_null());
 
@@ -61,8 +73,16 @@ fn test_ffi_get_and_delete() {
         let features: [u8; 16] = [100; 16];
 
         let cell_id = mxbs::ffi::mxbs_store(
-            handle, 1, 1, 1, 0x01, 0o744, 100,
-            features.as_ptr(), text.as_ptr(), meta.as_ptr(),
+            handle,
+            1,
+            1,
+            1,
+            0x01,
+            0o744,
+            100,
+            features.as_ptr(),
+            text.as_ptr(),
+            meta.as_ptr(),
         );
 
         let get_ptr = mxbs::ffi::mxbs_get(handle, cell_id);
@@ -95,7 +115,18 @@ fn test_ffi_stats() {
 
         let text = CString::new("cell").unwrap();
         let meta = CString::new("{}").unwrap();
-        mxbs::ffi::mxbs_store(handle, 1, 1, 1, 0, 0o744, 100, std::ptr::null(), text.as_ptr(), meta.as_ptr());
+        mxbs::ffi::mxbs_store(
+            handle,
+            1,
+            1,
+            1,
+            0,
+            0o744,
+            100,
+            std::ptr::null(),
+            text.as_ptr(),
+            meta.as_ptr(),
+        );
 
         let stats_ptr2 = mxbs::ffi::mxbs_stats(handle);
         let stats_str2 = CStr::from_ptr(stats_ptr2).to_str().unwrap();
@@ -116,8 +147,16 @@ fn test_ffi_deferred_scoring() {
         let text = CString::new("unscored cell").unwrap();
         let meta = CString::new("{}").unwrap();
         let cell_id = mxbs::ffi::mxbs_store(
-            handle, 1, 1, 1, 0x01, 0o744, 100,
-            std::ptr::null(), text.as_ptr(), meta.as_ptr(),
+            handle,
+            1,
+            1,
+            1,
+            0x01,
+            0o744,
+            100,
+            std::ptr::null(),
+            text.as_ptr(),
+            meta.as_ptr(),
         );
         assert!(cell_id > 0);
 
@@ -150,8 +189,16 @@ fn test_ffi_reinforce() {
         let meta = CString::new("{}").unwrap();
         let features: [u8; 16] = [100; 16];
         let cell_id = mxbs::ffi::mxbs_store(
-            handle, 1, 1, 1, 0, 0o744, 100,
-            features.as_ptr(), text.as_ptr(), meta.as_ptr(),
+            handle,
+            1,
+            1,
+            1,
+            0,
+            0o744,
+            100,
+            features.as_ptr(),
+            text.as_ptr(),
+            meta.as_ptr(),
         );
 
         let ok = mxbs::ffi::mxbs_reinforce(handle, cell_id, 5.0);
@@ -174,8 +221,16 @@ fn test_ffi_dream() {
         let meta = CString::new("{}").unwrap();
         let features: [u8; 16] = [100; 16];
         mxbs::ffi::mxbs_store(
-            handle, 1, 1, 1, 0x01, 0o744, 200,
-            features.as_ptr(), text.as_ptr(), meta.as_ptr(),
+            handle,
+            1,
+            1,
+            1,
+            0x01,
+            0o744,
+            200,
+            features.as_ptr(),
+            text.as_ptr(),
+            meta.as_ptr(),
         );
 
         let dream_ptr = mxbs::ffi::mxbs_dream(handle, 1, 0x01, 20, 5);
@@ -191,13 +246,24 @@ fn test_ffi_dream() {
 #[test]
 fn test_ffi_null_handle_safety() {
     unsafe {
-        assert_eq!(mxbs::ffi::mxbs_store(
-            std::ptr::null_mut(), 1, 1, 1, 0, 0o744, 100,
-            std::ptr::null(), std::ptr::null(), std::ptr::null(),
-        ), 0);
-        assert!(mxbs::ffi::mxbs_search(
-            std::ptr::null_mut(), std::ptr::null(), 1, 0, 1, 5,
-        ).is_null());
+        assert_eq!(
+            mxbs::ffi::mxbs_store(
+                std::ptr::null_mut(),
+                1,
+                1,
+                1,
+                0,
+                0o744,
+                100,
+                std::ptr::null(),
+                std::ptr::null(),
+                std::ptr::null(),
+            ),
+            0
+        );
+        assert!(
+            mxbs::ffi::mxbs_search(std::ptr::null_mut(), std::ptr::null(), 1, 0, 1, 5,).is_null()
+        );
         assert!(mxbs::ffi::mxbs_stats(std::ptr::null_mut()).is_null());
         mxbs::ffi::mxbs_close(std::ptr::null_mut());
         mxbs::ffi::mxbs_free_string(std::ptr::null());

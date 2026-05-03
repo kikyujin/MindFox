@@ -29,7 +29,7 @@ fn remember_t_positive_yields_distribution() {
             hits += 1;
         }
     }
-    assert!(hits >= 30 && hits <= 130, "hits = {}", hits);
+    assert!((30..=130).contains(&hits), "hits = {}", hits);
 }
 
 #[test]
@@ -41,7 +41,7 @@ fn remember_high_temperature_approaches_50_50() {
             hits += 1;
         }
     }
-    assert!(hits >= 400 && hits <= 600, "hits = {}", hits);
+    assert!((400..=600).contains(&hits), "hits = {}", hits);
 }
 
 #[test]
@@ -78,17 +78,28 @@ fn sample_t_high_approaches_uniform() {
     let mut counts = [0; 3];
     for _ in 0..3000 {
         let label = *sample(&cands, 100.0, &mut rng).unwrap();
-        counts[match label { "a" => 0, "b" => 1, "c" => 2, _ => unreachable!() }] += 1;
+        counts[match label {
+            "a" => 0,
+            "b" => 1,
+            "c" => 2,
+            _ => unreachable!(),
+        }] += 1;
     }
-    for c in counts { assert!(c >= 700 && c <= 1300, "counts = {:?}", counts); }
+    for c in counts {
+        assert!((700..=1300).contains(&c), "counts = {:?}", counts);
+    }
 }
 
 #[test]
 fn remember_seed_reproducible() {
     let mut rng1 = StdRng::seed_from_u64(123);
     let mut rng2 = StdRng::seed_from_u64(123);
-    let r1: Vec<bool> = (0..100).map(|_| remember(0.3, 0.3, 0.1, &mut rng1)).collect();
-    let r2: Vec<bool> = (0..100).map(|_| remember(0.3, 0.3, 0.1, &mut rng2)).collect();
+    let r1: Vec<bool> = (0..100)
+        .map(|_| remember(0.3, 0.3, 0.1, &mut rng1))
+        .collect();
+    let r2: Vec<bool> = (0..100)
+        .map(|_| remember(0.3, 0.3, 0.1, &mut rng2))
+        .collect();
     assert_eq!(r1, r2);
 }
 
@@ -97,7 +108,11 @@ fn sample_seed_reproducible() {
     let cands = vec![("a", 0.1), ("b", 0.9), ("c", 0.5)];
     let mut rng1 = StdRng::seed_from_u64(456);
     let mut rng2 = StdRng::seed_from_u64(456);
-    let r1: Vec<&str> = (0..50).map(|_| *sample(&cands, 0.3, &mut rng1).unwrap()).collect();
-    let r2: Vec<&str> = (0..50).map(|_| *sample(&cands, 0.3, &mut rng2).unwrap()).collect();
+    let r1: Vec<&str> = (0..50)
+        .map(|_| *sample(&cands, 0.3, &mut rng1).unwrap())
+        .collect();
+    let r2: Vec<&str> = (0..50)
+        .map(|_| *sample(&cands, 0.3, &mut rng2).unwrap())
+        .collect();
     assert_eq!(r1, r2);
 }
