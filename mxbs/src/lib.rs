@@ -1334,15 +1334,14 @@ mod tests {
         )
         .unwrap();
 
-        let tmp = "/tmp/mxbs_test_save.db";
-        m.save_to(tmp).unwrap();
+        let dir = tempfile::tempdir().unwrap();
+        let tmp = dir.path().join("mxbs_test_save.db");
+        m.save_to(tmp.to_str().unwrap()).unwrap();
 
-        let m2 = MxBS::open(tmp, MxBSConfig::default()).unwrap();
+        let m2 = MxBS::open(tmp.to_str().unwrap(), MxBSConfig::default()).unwrap();
         let cell = m2.get(1).unwrap();
         assert_eq!(cell.text, "保存テスト");
         assert_eq!(cell.features, f);
-
-        let _ = std::fs::remove_file(tmp);
     }
 
     #[test]
