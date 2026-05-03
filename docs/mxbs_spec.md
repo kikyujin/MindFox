@@ -701,7 +701,7 @@ CREATE TABLE mxbs_meta (
 );
 
 -- 初期化時に挿入
-INSERT INTO mxbs_meta (key, value) VALUES ('version', '0.1.0');
+INSERT INTO mxbs_meta (key, value) VALUES ('version', '0.1.1');
 INSERT INTO mxbs_meta (key, value) VALUES ('factor_dim', '16');
 ```
 
@@ -946,6 +946,10 @@ int mxbs_save(MxBSHandle* h, const char* dest_path);
 // 統計
 const char* mxbs_stats(MxBSHandle* h);
 
+// メタデータ
+const char* mxbs_meta_get(MxBSHandle* h, const char* key);  // JSON: {"value": ...}
+int mxbs_meta_set(MxBSHandle* h, const char* key, const char* value);
+
 // メモリ解放
 void mxbs_free_string(const char* s);
 ```
@@ -1093,3 +1097,4 @@ MxBS: `effective = cosine × importance × price_factor × decay`
 | Date | Version | Author | Notes |
 |---|---|---|---|
 | 2026-04-28 | 0.1.0 | エルマー🦊 + マスター | xMBS Lite spec をベースに MxBS 向けに再設計。因子ベクトル化 |
+| 2026-05-03 | 0.1.1 | ちびエルマー🦊 | §2.3 エンディアン→クロスプラットフォーム互換性。§12.3 version 更新。§15 meta_get/meta_set 追加 |

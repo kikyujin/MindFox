@@ -397,6 +397,54 @@ pub unsafe extern "C" fn mxbs_stats(h: *mut MxBSHandle) -> *const c_char {
 }
 
 /// # Safety
+/// `h` must be a valid handle. `key` must be a valid C string.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn mxbs_meta_get(h: *mut MxBSHandle, key: *const c_char) -> *const c_char {
+    if h.is_null() {
+        return ptr::null();
+    }
+    let result = panic::catch_unwind(panic::AssertUnwindSafe(|| {
+        let mxbs = unsafe { &*h };
+        let k = unsafe { cstr_to_str(key) }?;
+        let val = mxbs.meta_get(k).ok()?;
+        Some(to_json_cstring(&serde_json::json!({ "value": val })))
+    }));
+    match result {
+        Ok(Some(p)) => p,
+        _ => ptr::null(),
+    }
+}
+
+/// # Safety
+/// `h` must be a valid handle. `key` and `value` must be valid C strings.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn mxbs_meta_set(
+    h: *mut MxBSHandle,
+    key: *const c_char,
+    value: *const c_char,
+) -> c_int {
+    if h.is_null() {
+        return 0;
+    }
+    let result = panic::catch_unwind(panic::AssertUnwindSafe(|| {
+        let mxbs = unsafe { &*h };
+        let k = match unsafe { cstr_to_str(key) } {
+            Some(s) => s,
+            None => return 0,
+        };
+        let v = match unsafe { cstr_to_str(value) } {
+            Some(s) => s,
+            None => return 0,
+        };
+        match mxbs.meta_set(k, v) {
+            Ok(()) => 1,
+            Err(_) => 0,
+        }
+    }));
+    result.unwrap_or(0)
+}
+
+/// # Safety
 /// `s` must be a pointer returned by a `mxbs_*` function or null.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn mxbs_free_string(s: *const c_char) {

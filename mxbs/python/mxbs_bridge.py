@@ -150,6 +150,13 @@ class MxBSBridge:
         L.mxbs_stats.argtypes = [ctypes.c_void_p]
         L.mxbs_stats.restype = ctypes.c_void_p
 
+        # Meta
+        L.mxbs_meta_get.argtypes = [ctypes.c_void_p, ctypes.c_char_p]
+        L.mxbs_meta_get.restype = ctypes.c_void_p
+
+        L.mxbs_meta_set.argtypes = [ctypes.c_void_p, ctypes.c_char_p, ctypes.c_char_p]
+        L.mxbs_meta_set.restype = ctypes.c_int
+
         # Free
         L.mxbs_free_string.argtypes = [ctypes.c_void_p]
         L.mxbs_free_string.restype = None
@@ -259,6 +266,20 @@ class MxBSBridge:
             self._handle, cell_id, new_meta.encode("utf-8"),
             requester, req_groups
         ) == 1
+
+    def meta_get(self, key: str) -> Optional[str]:
+        ptr = self._lib.mxbs_meta_get(self._handle, key.encode("utf-8"))
+        result = self._parse_json(ptr)
+        if result is None:
+            return None
+        return result.get("value")
+
+    def meta_set(self, key: str, value: str) -> None:
+        ret = self._lib.mxbs_meta_set(
+            self._handle, key.encode("utf-8"), value.encode("utf-8")
+        )
+        if ret != 1:
+            raise RuntimeError(f"meta_set failed for key={key}")
 
     def save(self, dest_path: str) -> bool:
         return self._lib.mxbs_save(

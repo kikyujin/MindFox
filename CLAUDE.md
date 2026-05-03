@@ -10,7 +10,7 @@ MxMindFox workspace — Rust crate for game NPC memory management using GM-defin
   - `src/lib.rs` — Core types and engine (Cell, MxBS, SearchBuilder, DreamBuilder, InspireBuilder)
   - `src/agents.rs` — AgentRegistry: thin helper for group_bits/mode wiring
   - `src/preset.rs` — Preset loading from JSON, scoring prompt generation, LLM response parsing
-  - `src/ffi.rs` — C API (17 extern "C" functions). See mxbs_spec.md §15
+  - `src/ffi.rs` — C API (19 extern "C" functions). See mxbs_spec.md §15
   - `python/mxbs_bridge.py` — Python ctypes wrapper for libmxbs
 - **mxmindfox crate** (`mxmindfox/`): Orchestration layer, currently a skeleton.
 - **demos/oyatsu/** — "AI館おやつデモ": social deduction game (7 AI characters, Ollama gemma4:26b). Uses mxbs_bridge.py for cross-game memory, Mood system, diplomacy_toward.

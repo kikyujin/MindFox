@@ -250,7 +250,7 @@ impl MxBS {
                 key   TEXT PRIMARY KEY,
                 value TEXT NOT NULL
             );
-            INSERT OR IGNORE INTO mxbs_meta (key, value) VALUES ('version', '0.1.0');
+            INSERT OR IGNORE INTO mxbs_meta (key, value) VALUES ('version', '0.1.1');
             INSERT OR IGNORE INTO mxbs_meta (key, value) VALUES ('factor_dim', '16');
         ")?;
         Ok(())
@@ -498,6 +498,26 @@ impl MxBS {
         let mut dst = Connection::open(dest_path)?;
         let backup = rusqlite::backup::Backup::new(&self.conn, &mut dst)?;
         backup.run_to_completion(5, std::time::Duration::from_millis(250), None)?;
+        Ok(())
+    }
+
+    // ─── Meta ──────────────────────────────────────────────
+
+    pub fn meta_get(&self, key: &str) -> Result<Option<String>, MxBSError> {
+        let mut stmt = self.conn.prepare("SELECT value FROM mxbs_meta WHERE key = ?1")?;
+        let result = stmt.query_row(rusqlite::params![key], |row| row.get::<_, String>(0));
+        match result {
+            Ok(v) => Ok(Some(v)),
+            Err(rusqlite::Error::QueryReturnedNoRows) => Ok(None),
+            Err(e) => Err(e.into()),
+        }
+    }
+
+    pub fn meta_set(&self, key: &str, value: &str) -> Result<(), MxBSError> {
+        self.conn.execute(
+            "INSERT OR REPLACE INTO mxbs_meta (key, value) VALUES (?1, ?2)",
+            rusqlite::params![key, value],
+        )?;
         Ok(())
     }
 
@@ -998,6 +1018,18 @@ mod tests {
         assert_eq!(cell.features, f);
 
         let _ = std::fs::remove_file(tmp);
+    }
+
+    #[test]
+    fn test_meta_get_set() {
+        let m = mem();
+        assert_eq!(m.meta_get("version").unwrap(), Some("0.1.1".to_string()));
+        assert_eq!(m.meta_get("factor_dim").unwrap(), Some("16".to_string()));
+        assert_eq!(m.meta_get("nonexistent").unwrap(), None);
+        m.meta_set("test_key", "test_value").unwrap();
+        assert_eq!(m.meta_get("test_key").unwrap(), Some("test_value".to_string()));
+        m.meta_set("test_key", "updated").unwrap();
+        assert_eq!(m.meta_get("test_key").unwrap(), Some("updated".to_string()));
     }
 
     #[test]
