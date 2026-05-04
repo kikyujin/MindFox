@@ -1,4 +1,4 @@
-# MxMindFox
+# MindFox
 
 **Your NPCs remember. Your NPCs forget. No cloud required.**
 
@@ -9,7 +9,7 @@ SQLite is the only dependency. One binary. Works on PC, console, mobile, and you
 
 ---
 
-## Why MxMindFox?
+## Why MindFox?
 
 Most NPC memory solutions require cloud APIs, heavyweight ML models, or always-on network access. MxMindFox takes a different approach:
 
@@ -30,7 +30,7 @@ Most NPC memory solutions require cloud APIs, heavyweight ML models, or always-o
 │  Your Game (Unity / Unreal / Godot / CLI)    │
 │  Turn loop · LLM calls · UI                  │
 ├──────────────────────────────────────────────┤
-│  MxMindFox              ~800 lines Rust      │
+│  MxMindFox (crate)      ~800 lines Rust      │
 │  Mood · Decision · Diplomacy · Threshold     │
 │  C API (cdylib) + Python ctypes bridge       │
 ├──────────────────────────────────────────────┤
@@ -46,7 +46,7 @@ Most NPC memory solutions require cloud APIs, heavyweight ML models, or always-o
 **MxBS** is the memory engine — deterministic, fast, no randomness.
 **MxMindFox** adds mood, probabilistic decisions, and diplomacy on top — all the "messy human" parts.
 
-You can use MxBS alone if you just need NPC memory. Add MxMindFox when you want agents that *feel*.
+You can use MxBS alone if you just need NPC memory. Add MxMindFox when you want agents that *feel*. Together, they form **MindFox**.
 
 ## Crates
 
@@ -155,10 +155,24 @@ Three demos ship with the workspace, each proving a different capability:
 
 The **pageone** demo is the best starting point — it runs with zero external dependencies and demonstrates that MxBS's forgetting + reinforce alone can create distinct character personalities.
 
+## See Also
+
+### [MindFoxLite](https://github.com/kikyujin/MindFoxLite)
+
+Python single-file multi-agent story generator. No Rust, no build step — just `python mindfoxlite.py`.
+Uses Ollama + gemma4:26b locally. Good starting point if you want to experiment with multi-agent narratives before integrating MindFox into your game.
+
+Includes two complete scenarios not available in MindFox:
+
+| Scenario | Setting | Agents |
+|---|---|---|
+| **hawaii2035** | Near-future Hawaii geopolitical simulation | 6 agents, inner_voice system |
+| **mire_defense** | Korean corporate drama ("ミレ・ディフェンスの暗闘") | 8 agents, faction dynamics |
+
 ## Project Structure
 
 ```
-mxmindfox-workspace/
+MindFox/
 ├── Cargo.toml             # Workspace root
 ├── mxbs/                  # Memory engine crate
 │   ├── Cargo.toml
