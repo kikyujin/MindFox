@@ -833,7 +833,7 @@ prompt = f"""
 - Phase 3 「MxMindFox 切り出し」が ✅ 完了
 - pageone v0.4 / sengoku v2 / oyatsu v2 の実測値追記
 - preset_guide.md の材料が「MxMindFox プリセット例」分も増える
-- Phase 4（商用準備）に進める
+- Phase 4（検証作業）に進める
 
 ---
 

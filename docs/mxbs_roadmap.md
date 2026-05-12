@@ -174,15 +174,13 @@ Rust MxBS の実地テスト。3 デモタイトルで全パス検証。
 - [ ] (planned demo #4) MxBS + MxMindFox 対応
 - [ ] (planned demo #5) 設計更新（MxBS / MxMindFox / JUWA 統合軸）
 
-### Phase 4: 商用準備
+### Phase 4: 検証作業
 
 - [ ] preset_guide.md — GM 向けプリセット設計ガイド（ページワン実測データベース）
-- [ ] API リファレンスドキュメント
-- [ ] サンプルプロジェクト（Rust / Python / C# の最小例）
-- [ ] ライセンス構造（MxBS standalone + MxMindFox bundle）
-- [ ] パフォーマンス比較（Python vs Rust）
+- [x] API リファレンスドキュメント（mxbs_spec.md で継続整備中）
+- [x] サンプルプロジェクト（demos/oyatsu, demos/pageone で検証兼開発中）
 - [ ] (planned demo page)（Hawaii 2035 動画 or インタラクティブ）
-- [ ] `cargo publish`
+- [x] `cargo publish` (v0.3.1)
 
 ---
 
