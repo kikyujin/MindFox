@@ -10,9 +10,19 @@ MxMindFox workspace — Rust crate for game NPC memory management using GM-defin
   - `src/lib.rs` — Core types and engine (Cell, MxBS, SearchBuilder, DreamBuilder, InspireBuilder)
   - `src/agents.rs` — AgentRegistry: thin helper for group_bits/mode wiring
   - `src/preset.rs` — Preset loading from JSON, scoring prompt generation, LLM response parsing
-  - `src/ffi.rs` — C API (19 extern "C" functions). See mxbs_spec.md §15
-  - `python/mxbs_bridge.py` — Python ctypes wrapper for libmxbs
+  - `src/chatterfox.rs` — MxChatterFox: cosine cascade search (backtracking N-word filter on top of MxBS search)
+  - `src/yamamva.rs` — MxYamAMVA: game state management (keyword flags, grants/requires, ACL-based word visibility)
+  - `src/ffi.rs` — C API (29 extern "C" functions). See mxbs_spec.md §15, docs/mxchatterfox_api.md, docs/mxyamamva_api.md
+  - `python/mxbs_bridge.py` — Python ctypes wrapper for libmxbs (MxBSBridge + MxYamAMVAState)
+  - `python/yamamva_bridge.py` — Python ctypes wrapper for libyamamva (YamAMVA scenario engine)
 - **mxmindfox crate** (`mxmindfox/`): Orchestration layer, currently a skeleton.
+- **demos/oyatsu_chatterfox/** — "おやつは誰がたべた（MxChatterFox版）": YAML-driven detective game (6 NPC × 51 lines). YamAMVA scenario + MxChatterFox cascade search + MxYamAMVA state management.
+  - `scenario/oyatsu.yaml` — YamAMVA scenario (intro → lobby → hearing → chatterfox → accuse → ending)
+  - `data.py` — NPC definitions, 51 NPC lines, 11+26 word cards, factor vectors
+  - `baker.py` — Bakes data.py into MxBS cells (oyatsu_chatterfox.db, 88 cells)
+  - `main.py` — CLI entry. Default: YamAMVA mode. `--standalone`: no YamAMVA. `--rust`: Rust cascade_search
+  - `game_state.py` — Standalone mode only (deprecated, replaced by MxYamAMVAState)
+  - `preset.py` — 16 factor names for the oyatsu scenario
 - **demos/oyatsu/** — "AI館おやつデモ": social deduction game (7 AI characters, Ollama gemma4:26b). Uses mxbs_bridge.py for cross-game memory, Mood system, diplomacy_toward.
   - `characters.py` — Character dataclass (gender field, archetype-based target scoring)
   - `memory.py` — MxBS integration (Mood, diplomacy, store helpers)
@@ -31,9 +41,18 @@ MxMindFox workspace — Rust crate for game NPC memory management using GM-defin
 ## Build & Test
 
 ```bash
-cargo test -p mxbs        # Run all MxBS tests (34 unit + 9 FFI integration)
+cargo test -p mxbs        # Run all MxBS tests (52 unit + 9 FFI integration)
+cargo test -p mxmindfox   # Run MxMindFox tests (47 tests)
 cargo check               # Check both crates
 cargo build -p mxbs       # Produces target/debug/libmxbs.dylib (cdylib)
+cargo build -p mxbs --release  # Release build (required for Python bridge)
+
+# oyatsu_chatterfox demo
+cd demos/oyatsu_chatterfox
+python3 baker.py           # Bake data → oyatsu_chatterfox.db
+python3 main.py            # YamAMVA mode (Python cascade_search)
+python3 main.py --rust     # YamAMVA mode (Rust cascade_search)
+python3 main.py --standalone  # Standalone mode (no YamAMVA)
 ```
 
 Rust edition 2024 (requires rustc 1.85+). Currently on rustc 1.94.0.
@@ -47,6 +66,10 @@ Rust edition 2024 (requires rustc 1.85+). Currently on rustc 1.94.0.
 - ACL uses UNIX mode (u16) + group bitflag (u64). `get_perm()` is the common helper.
 - AgentRegistry does NOT own MxBS — takes `&MxBS` references to avoid lifetime complexity.
 - `serde` derive is used on MxBSConfig (Deserialize) and result types (Serialize) for FFI JSON serialization.
+- MxChatterFox (`cascade_search`) is stateless — combines MxBS search() + cosine_similarity(), no internal state.
+- MxYamAMVA (`MxYamAMVAState`) holds keyword flags + cell_id map. Does NOT depend on YamAMVA crate — communicates via JSON strings.
+- `search([0u8; 16], ...)` with all-zero query returns all cells (non-vector mode). Used by prepare_chatterfox_lines.
+- YamAMVA (external, `~/work/YAMAMVA`) is MIT OSS. MxBS has zero compile-time dependency on it — Python bridge only.
 
 ## Dependencies
 
