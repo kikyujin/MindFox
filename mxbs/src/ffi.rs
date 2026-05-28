@@ -2,7 +2,7 @@ use std::ffi::{CStr, CString, c_char, c_int};
 use std::panic;
 use std::ptr;
 
-use crate::{Cell, MxBS, MxBSConfig};
+use crate::{Cell, FACTOR_DIM, MxBS, MxBSConfig};
 
 pub type MxBSHandle = MxBS;
 
@@ -442,6 +442,66 @@ pub unsafe extern "C" fn mxbs_meta_set(
         }
     }));
     result.unwrap_or(0)
+}
+
+/// # Safety
+/// `h` must be a valid handle.
+/// `word_features_packed` must point to `num_words * 16` bytes.
+/// `exclude_ids_json` may be null.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn mxbs_chatterfox_search(
+    h: *mut MxBSHandle,
+    word_features_packed: *const u8,
+    num_words: c_int,
+    lines_owner: u32,
+    viewer_id: u32,
+    viewer_groups: u64,
+    current_turn: u32,
+    exclude_ids_json: *const c_char,
+    threshold: f32,
+    top_k: c_int,
+    seed: u64,
+) -> *const c_char {
+    if h.is_null() || word_features_packed.is_null() || num_words < 1 || num_words > 3 {
+        return ptr::null();
+    }
+    let result = panic::catch_unwind(panic::AssertUnwindSafe(|| {
+        let mxbs = unsafe { &*h };
+        let n = num_words as usize;
+        let raw = unsafe { std::slice::from_raw_parts(word_features_packed, n * FACTOR_DIM) };
+        let mut word_features: Vec<[u8; FACTOR_DIM]> = Vec::with_capacity(n);
+        for i in 0..n {
+            let mut arr = [0u8; FACTOR_DIM];
+            arr.copy_from_slice(&raw[i * FACTOR_DIM..(i + 1) * FACTOR_DIM]);
+            word_features.push(arr);
+        }
+
+        let exclude_ids: Vec<u64> = if exclude_ids_json.is_null() {
+            Vec::new()
+        } else {
+            match unsafe { cstr_to_str(exclude_ids_json) } {
+                Some(s) => serde_json::from_str(s).unwrap_or_default(),
+                None => Vec::new(),
+            }
+        };
+
+        match crate::chatterfox::cascade_search(
+            mxbs,
+            &word_features,
+            lines_owner,
+            viewer_id,
+            viewer_groups,
+            current_turn,
+            &exclude_ids,
+            threshold,
+            top_k as usize,
+            seed,
+        ) {
+            Ok(r) => to_json_cstring(&r),
+            Err(_) => ptr::null(),
+        }
+    }));
+    result.unwrap_or(ptr::null())
 }
 
 /// # Safety

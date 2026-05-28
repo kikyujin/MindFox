@@ -5,6 +5,7 @@
 //! Only depends on SQLite.
 
 pub mod agents;
+pub mod chatterfox;
 pub mod ffi;
 pub mod preset;
 

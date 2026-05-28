@@ -157,6 +157,21 @@ class MxBSBridge:
         L.mxbs_meta_set.argtypes = [ctypes.c_void_p, ctypes.c_char_p, ctypes.c_char_p]
         L.mxbs_meta_set.restype = ctypes.c_int
 
+        # ChatterFox
+        L.mxbs_chatterfox_search.argtypes = [
+            ctypes.c_void_p,
+            ctypes.POINTER(ctypes.c_uint8),
+            ctypes.c_int,
+            ctypes.c_uint32,
+            ctypes.c_uint32, ctypes.c_uint64,
+            ctypes.c_uint32,
+            ctypes.c_char_p,
+            ctypes.c_float,
+            ctypes.c_int,
+            ctypes.c_uint64,
+        ]
+        L.mxbs_chatterfox_search.restype = ctypes.c_void_p
+
         # Free
         L.mxbs_free_string.argtypes = [ctypes.c_void_p]
         L.mxbs_free_string.restype = None
@@ -289,6 +304,47 @@ class MxBSBridge:
     def stats(self) -> dict:
         ptr = self._lib.mxbs_stats(self._handle)
         return self._parse_json(ptr) or {}
+
+    def chatterfox_search(
+        self,
+        word_features_list: list,
+        lines_owner: int,
+        viewer_id: int,
+        viewer_groups: int,
+        current_turn: int,
+        exclude_ids: Optional[list] = None,
+        threshold: float = 0.35,
+        top_k: int = 20,
+        seed: int = 0,
+    ) -> dict:
+        """Cascade search. Returns dict with cell_id, text, meta, depth, is_fallback."""
+        num_words = len(word_features_list)
+        packed = (ctypes.c_uint8 * (num_words * 16))()
+        for i, wf in enumerate(word_features_list):
+            for j in range(16):
+                packed[i * 16 + j] = wf[j] if j < len(wf) else 0
+
+        exclude_json = None
+        if exclude_ids:
+            exclude_json = json.dumps(exclude_ids).encode("utf-8")
+
+        ptr = self._lib.mxbs_chatterfox_search(
+            self._handle,
+            ctypes.cast(packed, ctypes.POINTER(ctypes.c_uint8)),
+            num_words,
+            lines_owner,
+            viewer_id,
+            viewer_groups,
+            current_turn,
+            exclude_json,
+            ctypes.c_float(threshold),
+            top_k,
+            seed,
+        )
+        result = self._parse_json(ptr)
+        if result is None:
+            return {"cell_id": 0, "text": "", "meta": "", "depth": 0, "is_fallback": True}
+        return result
 
     def close(self):
         if self._handle:
