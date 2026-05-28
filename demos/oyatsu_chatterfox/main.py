@@ -18,7 +18,7 @@ from typing import Optional
 
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / "mxbs" / "python"))
 
-from data import NPC_DEFS, NPC_ID_MAP, ALL_LINES, WORDS_INITIAL, FALLBACKS, PLAYER_ID
+from data import NPC_DEFS, NPC_ID_MAP, ALL_LINES, WORDS_INITIAL, WORDS_GETTABLE, FALLBACKS, PLAYER_ID
 
 # ─── Command IDs for YamAMVA ───
 
@@ -301,8 +301,8 @@ def run_yamamva_mode(args):
                             db._handle, meta, PLAYER_ID, PLAYER_GROUPS,
                         )
                         for kw in newly:
-                            if kw in _WORDS_GETTABLE:
-                                available_words[kw] = _WORDS_GETTABLE[kw]
+                            if kw in WORDS_GETTABLE:
+                                available_words[kw] = WORDS_GETTABLE[kw]
                             print(f"  NEW \"{kw}\" GET!")
                         recent_used.setdefault(npc_key, set()).add(result["cell_id"])
                         line_id = str(result["cell_id"])
@@ -336,7 +336,6 @@ def run_yamamva_mode(args):
                             PLAYER_ID, PLAYER_GROUPS,
                         )
                         for kw in newly:
-                            from data import WORDS_GETTABLE
                             if kw in WORDS_GETTABLE:
                                 available_words[kw] = WORDS_GETTABLE[kw]
                             print(f"  NEW \"{kw}\" GET!")
