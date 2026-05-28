@@ -8,6 +8,7 @@ pub mod agents;
 pub mod chatterfox;
 pub mod ffi;
 pub mod preset;
+pub mod yamamva;
 
 pub use agents::AgentRegistry;
 pub use preset::{Axis, Preset, default_scores, parse_scores};

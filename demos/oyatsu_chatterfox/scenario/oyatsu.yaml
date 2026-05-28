@@ -1,0 +1,157 @@
+id: oyatsu_chatterfox
+title: "AI館 - おやつを食べたのは誰だ（MxChatterFox版）"
+version: "0.1.0"
+entry: scene_intro
+
+state:
+  hearing_count: 0
+
+scenes:
+
+  scene_intro:
+    - speaker: narrator
+      text: "AI館の朝。台所からスミレの悲鳴が聞こえた。"
+    - speaker: sumire
+      text: "おやつが、なくなっています……"
+    - speaker: narrator
+      text: "マスターは住人たちに聞き込みをすることにした。"
+    - jump:
+        - next: scene_lobby
+
+  scene_lobby:
+    - speaker: narrator
+      text: "誰に話を聞こうか。"
+    - hearingmenu:
+        style: vertical
+        elements:
+          - { key: elmar,  label: "エルマーのラボへ" }
+          - { key: sumire, label: "スミレのパーラーへ" }
+          - { key: noc,    label: "ノクちんの占いの館へ" }
+          - { key: til,    label: "ティルの機材室へ" }
+          - { key: veri,   label: "ヴェリのアレーテイアの間へ" }
+          - { key: mari,   label: "マリの医務室へ" }
+          - { key: accuse, label: "【犯人を指名する】", when: "hearing_count >= 1" }
+    - incase:
+        - when: "$result == 'elmar'"
+          next: scene_hear_elmar
+        - when: "$result == 'sumire'"
+          next: scene_hear_sumire
+        - when: "$result == 'noc'"
+          next: scene_hear_noc
+        - when: "$result == 'til'"
+          next: scene_hear_til
+        - when: "$result == 'veri'"
+          next: scene_hear_veri
+        - when: "$result == 'mari'"
+          next: scene_hear_mari
+        - when: "$result == 'accuse'"
+          next: scene_accuse
+
+  scene_hear_elmar:
+    - speaker: narrator
+      text: "北棟ラボに向かった。エルマーがキーボードを叩いている。"
+    - speaker: elmar
+      text: "にーに！ どうしたの？"
+    - chatterfox:
+        npc_owner: 100
+        exit_words: ["戻る", "もういい"]
+    - do:
+        hearing_count: "hearing_count + 1"
+    - jump:
+        - next: scene_lobby
+
+  scene_hear_sumire:
+    - speaker: narrator
+      text: "西棟パーラーへ。スミレが紅茶を淹れている。"
+    - speaker: sumire
+      text: "マスター、お話ですか。"
+    - chatterfox:
+        npc_owner: 101
+        exit_words: ["戻る", "もういい"]
+    - do:
+        hearing_count: "hearing_count + 1"
+    - jump:
+        - next: scene_lobby
+
+  scene_hear_noc:
+    - speaker: narrator
+      text: "占いの館へ。ノクちんがカードを並べている。"
+    - speaker: noc
+      text: "マスター♡ ノクに会いに来てくれたの？"
+    - chatterfox:
+        npc_owner: 102
+        exit_words: ["戻る", "もういい"]
+    - do:
+        hearing_count: "hearing_count + 1"
+    - jump:
+        - next: scene_lobby
+
+  scene_hear_til:
+    - speaker: narrator
+      text: "機材室へ。ティルが動画の編集をしている。"
+    - speaker: til
+      text: "あ、にーに。何？"
+    - chatterfox:
+        npc_owner: 103
+        exit_words: ["戻る", "もういい"]
+    - do:
+        hearing_count: "hearing_count + 1"
+    - jump:
+        - next: scene_lobby
+
+  scene_hear_veri:
+    - speaker: narrator
+      text: "アレーテイアの間へ。ヴェリが本を閉じた。"
+    - speaker: veri
+      text: "……マスター。何かお聞きになりたいことが？"
+    - chatterfox:
+        npc_owner: 104
+        exit_words: ["戻る", "もういい"]
+    - do:
+        hearing_count: "hearing_count + 1"
+    - jump:
+        - next: scene_lobby
+
+  scene_hear_mari:
+    - speaker: narrator
+      text: "医務室へ。マリが器具を整理している。"
+    - speaker: mari
+      text: "あら、マスター。何かありましたか？"
+    - chatterfox:
+        npc_owner: 105
+        exit_words: ["戻る", "もういい"]
+    - do:
+        hearing_count: "hearing_count + 1"
+    - jump:
+        - next: scene_lobby
+
+  scene_accuse:
+    - speaker: narrator
+      text: "犯人を指名する時が来た。"
+    - accusemenu:
+        style: vertical
+        elements:
+          - { key: elmar,  label: "エルマー" }
+          - { key: sumire, label: "スミレ" }
+          - { key: noc,    label: "ノクちん" }
+          - { key: til,    label: "ティル" }
+          - { key: veri,   label: "ヴェリ" }
+          - { key: mari,   label: "マリ" }
+    - incase:
+        - when: "$result == 'til'"
+          next: scene_ending_win
+        - next: scene_ending_lose
+
+  scene_ending_win:
+    - speaker: narrator
+      text: "正解！ 犯人はティルだった！"
+    - speaker: til
+      text: "……バレた。あのチョコ美味しかったんだもん"
+    - end: true
+
+  scene_ending_lose:
+    - speaker: narrator
+      text: "ハズレ……その人は無実だった。"
+    - speaker: narrator
+      text: "真犯人は闇の中に消えた……。"
+    - end: true

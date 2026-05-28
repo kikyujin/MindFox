@@ -3,6 +3,7 @@ use std::panic;
 use std::ptr;
 
 use crate::{Cell, FACTOR_DIM, MxBS, MxBSConfig};
+use crate::yamamva::MxYamAMVAState;
 
 pub type MxBSHandle = MxBS;
 
@@ -502,6 +503,171 @@ pub unsafe extern "C" fn mxbs_chatterfox_search(
         }
     }));
     result.unwrap_or(ptr::null())
+}
+
+// ─── MxYamAMVA C API ──────────────────────────────────────
+
+#[unsafe(no_mangle)]
+pub extern "C" fn mxbs_yamamva_new() -> *mut MxYamAMVAState {
+    Box::into_raw(Box::new(MxYamAMVAState::new()))
+}
+
+/// # Safety
+/// `state` must be a valid pointer returned by `mxbs_yamamva_new`.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn mxbs_yamamva_free(state: *mut MxYamAMVAState) {
+    if !state.is_null() {
+        unsafe { drop(Box::from_raw(state)) };
+    }
+}
+
+/// # Safety
+/// `state` must be a valid pointer. `check_json` must be a valid C string (JSON array).
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn mxbs_yamamva_keyword_gate(
+    state: *const MxYamAMVAState,
+    check_json: *const c_char,
+) -> f32 {
+    if state.is_null() || check_json.is_null() {
+        return 0.0;
+    }
+    let result = panic::catch_unwind(panic::AssertUnwindSafe(|| {
+        let st = unsafe { &*state };
+        let json_str = unsafe { cstr_to_str(check_json) }.unwrap_or("[]");
+        let keywords: Vec<String> = serde_json::from_str(json_str).unwrap_or_default();
+        crate::yamamva::keyword_gate(st, &keywords)
+    }));
+    result.unwrap_or(0.0)
+}
+
+/// # Safety
+/// `state` and `h` must be valid pointers. `grant_json` must be a valid C string.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn mxbs_yamamva_keyword_grant(
+    state: *mut MxYamAMVAState,
+    h: *mut MxBSHandle,
+    grant_json: *const c_char,
+    player_id: u32,
+    player_groups: u64,
+) -> *const c_char {
+    if state.is_null() || h.is_null() || grant_json.is_null() {
+        return ptr::null();
+    }
+    let result = panic::catch_unwind(panic::AssertUnwindSafe(|| {
+        let st = unsafe { &mut *state };
+        let db = unsafe { &*h };
+        let json_str = unsafe { cstr_to_str(grant_json) }.unwrap_or("[]");
+        let names: Vec<String> = serde_json::from_str(json_str).unwrap_or_default();
+        let newly = crate::yamamva::keyword_grant(st, db, &names, player_id, player_groups);
+        to_json_cstring(&newly)
+    }));
+    result.unwrap_or(ptr::null())
+}
+
+/// # Safety
+/// `state` and `h` must be valid pointers.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn mxbs_yamamva_prepare_lines(
+    state: *const MxYamAMVAState,
+    h: *mut MxBSHandle,
+    npc_owner: u32,
+    viewer_id: u32,
+    viewer_groups: u64,
+    current_turn: u32,
+) -> *const c_char {
+    if state.is_null() || h.is_null() {
+        return ptr::null();
+    }
+    let result = panic::catch_unwind(panic::AssertUnwindSafe(|| {
+        let st = unsafe { &*state };
+        let db = unsafe { &*h };
+        match crate::yamamva::prepare_chatterfox_lines(
+            st, db, npc_owner, viewer_id, viewer_groups, current_turn,
+        ) {
+            Ok(ids) => to_json_cstring(&ids),
+            Err(_) => ptr::null(),
+        }
+    }));
+    result.unwrap_or(ptr::null())
+}
+
+/// # Safety
+/// `state` and `h` must be valid pointers. `meta_json` must be a valid C string.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn mxbs_yamamva_process_grants(
+    state: *mut MxYamAMVAState,
+    h: *mut MxBSHandle,
+    meta_json: *const c_char,
+    player_id: u32,
+    player_groups: u64,
+) -> *const c_char {
+    if state.is_null() || h.is_null() || meta_json.is_null() {
+        return ptr::null();
+    }
+    let result = panic::catch_unwind(panic::AssertUnwindSafe(|| {
+        let st = unsafe { &mut *state };
+        let db = unsafe { &*h };
+        let meta = unsafe { cstr_to_str(meta_json) }.unwrap_or("{}");
+        let newly = crate::yamamva::process_grants(st, db, meta, player_id, player_groups);
+        to_json_cstring(&newly)
+    }));
+    result.unwrap_or(ptr::null())
+}
+
+/// # Safety
+/// `state` must be a valid pointer. `name` must be a valid C string.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn mxbs_yamamva_has_flag(
+    state: *const MxYamAMVAState,
+    name: *const c_char,
+) -> c_int {
+    if state.is_null() || name.is_null() {
+        return 0;
+    }
+    let result = panic::catch_unwind(panic::AssertUnwindSafe(|| {
+        let st = unsafe { &*state };
+        let n = unsafe { cstr_to_str(name) }.unwrap_or("");
+        if st.has_flag(n) { 1 } else { 0 }
+    }));
+    result.unwrap_or(0)
+}
+
+/// # Safety
+/// `state` must be a valid pointer.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn mxbs_yamamva_flag_count(state: *const MxYamAMVAState) -> c_int {
+    if state.is_null() {
+        return 0;
+    }
+    let result = panic::catch_unwind(panic::AssertUnwindSafe(|| {
+        let st = unsafe { &*state };
+        st.flag_count() as c_int
+    }));
+    result.unwrap_or(0)
+}
+
+/// # Safety
+/// `state` and `h` must be valid pointers.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn mxbs_yamamva_load_keywords(
+    state: *mut MxYamAMVAState,
+    h: *mut MxBSHandle,
+    player_id: u32,
+    player_groups: u64,
+    current_turn: u32,
+) -> c_int {
+    if state.is_null() || h.is_null() {
+        return 0;
+    }
+    let result = panic::catch_unwind(panic::AssertUnwindSafe(|| {
+        let st = unsafe { &mut *state };
+        let db = unsafe { &*h };
+        match crate::yamamva::load_keywords(st, db, player_id, player_groups, current_turn) {
+            Ok(n) => n as c_int,
+            Err(_) => 0,
+        }
+    }));
+    result.unwrap_or(0)
 }
 
 /// # Safety

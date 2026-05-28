@@ -157,6 +157,46 @@ class MxBSBridge:
         L.mxbs_meta_set.argtypes = [ctypes.c_void_p, ctypes.c_char_p, ctypes.c_char_p]
         L.mxbs_meta_set.restype = ctypes.c_int
 
+        # YamAMVA State
+        L.mxbs_yamamva_new.argtypes = []
+        L.mxbs_yamamva_new.restype = ctypes.c_void_p
+
+        L.mxbs_yamamva_free.argtypes = [ctypes.c_void_p]
+        L.mxbs_yamamva_free.restype = None
+
+        L.mxbs_yamamva_keyword_gate.argtypes = [ctypes.c_void_p, ctypes.c_char_p]
+        L.mxbs_yamamva_keyword_gate.restype = ctypes.c_float
+
+        L.mxbs_yamamva_keyword_grant.argtypes = [
+            ctypes.c_void_p, ctypes.c_void_p, ctypes.c_char_p,
+            ctypes.c_uint32, ctypes.c_uint64,
+        ]
+        L.mxbs_yamamva_keyword_grant.restype = ctypes.c_void_p
+
+        L.mxbs_yamamva_prepare_lines.argtypes = [
+            ctypes.c_void_p, ctypes.c_void_p,
+            ctypes.c_uint32, ctypes.c_uint32, ctypes.c_uint64, ctypes.c_uint32,
+        ]
+        L.mxbs_yamamva_prepare_lines.restype = ctypes.c_void_p
+
+        L.mxbs_yamamva_process_grants.argtypes = [
+            ctypes.c_void_p, ctypes.c_void_p, ctypes.c_char_p,
+            ctypes.c_uint32, ctypes.c_uint64,
+        ]
+        L.mxbs_yamamva_process_grants.restype = ctypes.c_void_p
+
+        L.mxbs_yamamva_has_flag.argtypes = [ctypes.c_void_p, ctypes.c_char_p]
+        L.mxbs_yamamva_has_flag.restype = ctypes.c_int
+
+        L.mxbs_yamamva_flag_count.argtypes = [ctypes.c_void_p]
+        L.mxbs_yamamva_flag_count.restype = ctypes.c_int
+
+        L.mxbs_yamamva_load_keywords.argtypes = [
+            ctypes.c_void_p, ctypes.c_void_p,
+            ctypes.c_uint32, ctypes.c_uint64, ctypes.c_uint32,
+        ]
+        L.mxbs_yamamva_load_keywords.restype = ctypes.c_int
+
         # ChatterFox
         L.mxbs_chatterfox_search.argtypes = [
             ctypes.c_void_p,
@@ -349,6 +389,82 @@ class MxBSBridge:
     def close(self):
         if self._handle:
             self._lib.mxbs_close(self._handle)
+            self._handle = None
+
+    def __del__(self):
+        self.close()
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *args):
+        self.close()
+
+
+class MxYamAMVAState:
+    """Python wrapper for the MxYamAMVA State C API."""
+
+    def __init__(self, lib):
+        self._lib = lib
+        self._handle = lib.mxbs_yamamva_new()
+        if not self._handle:
+            raise RuntimeError("mxbs_yamamva_new failed")
+
+    def _parse_json(self, ptr):
+        if not ptr:
+            return None
+        try:
+            raw = ctypes.string_at(ptr)
+            return json.loads(raw.decode("utf-8"))
+        finally:
+            self._lib.mxbs_free_string(ptr)
+
+    def keyword_gate(self, check: list) -> float:
+        check_json = json.dumps(check).encode("utf-8")
+        return self._lib.mxbs_yamamva_keyword_gate(self._handle, check_json)
+
+    def keyword_grant(self, db_handle, grants: list,
+                      player_id: int, player_groups: int) -> list:
+        grant_json = json.dumps(grants).encode("utf-8")
+        ptr = self._lib.mxbs_yamamva_keyword_grant(
+            self._handle, db_handle, grant_json, player_id, player_groups,
+        )
+        return self._parse_json(ptr) or []
+
+    def prepare_lines(self, db_handle, npc_owner: int,
+                      viewer_id: int, viewer_groups: int,
+                      current_turn: int) -> list:
+        ptr = self._lib.mxbs_yamamva_prepare_lines(
+            self._handle, db_handle, npc_owner,
+            viewer_id, viewer_groups, current_turn,
+        )
+        return self._parse_json(ptr) or []
+
+    def process_grants(self, db_handle, meta_json: str,
+                       player_id: int, player_groups: int) -> list:
+        ptr = self._lib.mxbs_yamamva_process_grants(
+            self._handle, db_handle, meta_json.encode("utf-8"),
+            player_id, player_groups,
+        )
+        return self._parse_json(ptr) or []
+
+    def has_flag(self, name: str) -> bool:
+        return self._lib.mxbs_yamamva_has_flag(
+            self._handle, name.encode("utf-8"),
+        ) == 1
+
+    def flag_count(self) -> int:
+        return self._lib.mxbs_yamamva_flag_count(self._handle)
+
+    def load_keywords(self, db_handle, player_id: int,
+                      player_groups: int, current_turn: int) -> int:
+        return self._lib.mxbs_yamamva_load_keywords(
+            self._handle, db_handle, player_id, player_groups, current_turn,
+        )
+
+    def close(self):
+        if self._handle:
+            self._lib.mxbs_yamamva_free(self._handle)
             self._handle = None
 
     def __del__(self):

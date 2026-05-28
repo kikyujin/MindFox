@@ -1,5 +1,9 @@
 """
-GameState — requires filter + grants processing (MxYamAMVA proxy)
+GameState — standalone mode only (--standalone flag).
+
+YamAMVA mode uses MxYamAMVAState (Rust/C API) instead.
+This file is kept for standalone fallback and will be removed
+once MxYamAMVA fully replaces it.
 """
 from data import WORDS_GETTABLE
 
