@@ -1,0 +1,12 @@
+scene_hear_noc:
+  - speaker: narrator
+    text: "占いの館へ。ノクちんがカードを並べている。"
+  - speaker: noc
+    text: "マスター♡ ノクに会いに来てくれたの？"
+  - chatterfox:
+      npc_owner: 102
+      exit_words: ["戻る", "もういい"]
+  - do:
+      hearing_count: "hearing_count + 1"
+  - jump:
+      - next: lobby:scene_lobby

@@ -1,0 +1,28 @@
+scene_lobby:
+  - speaker: narrator
+    text: "誰に話を聞こうか。"
+  - hearingmenu:
+      style: vertical
+      elements:
+        - { key: elmar,  label: "エルマーのラボへ" }
+        - { key: sumire, label: "スミレのパーラーへ" }
+        - { key: noc,    label: "ノクちんの占いの館へ" }
+        - { key: til,    label: "ティルの機材室へ" }
+        - { key: veri,   label: "ヴェリのアレーテイアの間へ" }
+        - { key: mari,   label: "マリの医務室へ" }
+        - { key: accuse, label: "【犯人を指名する】", when: "hearing_count >= 1" }
+  - incase:
+      - when: "$result == 'elmar'"
+        next: hear_elmar:scene_hear_elmar
+      - when: "$result == 'sumire'"
+        next: hear_sumire:scene_hear_sumire
+      - when: "$result == 'noc'"
+        next: hear_noc:scene_hear_noc
+      - when: "$result == 'til'"
+        next: hear_til:scene_hear_til
+      - when: "$result == 'veri'"
+        next: hear_veri:scene_hear_veri
+      - when: "$result == 'mari'"
+        next: hear_mari:scene_hear_mari
+      - when: "$result == 'accuse'"
+        next: endings:scene_accuse

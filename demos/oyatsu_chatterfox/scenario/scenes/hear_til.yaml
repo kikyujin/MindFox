@@ -1,0 +1,12 @@
+scene_hear_til:
+  - speaker: narrator
+    text: "機材室へ。ティルが動画の編集をしている。"
+  - speaker: til
+    text: "あ、にーに。何？"
+  - chatterfox:
+      npc_owner: 103
+      exit_words: ["戻る", "もういい"]
+  - do:
+      hearing_count: "hearing_count + 1"
+  - jump:
+      - next: lobby:scene_lobby

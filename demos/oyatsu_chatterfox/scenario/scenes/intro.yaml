@@ -1,0 +1,9 @@
+scene_intro:
+  - speaker: narrator
+    text: "AI館の朝。台所からスミレの悲鳴が聞こえた。"
+  - speaker: sumire
+    text: "おやつが、なくなっています……"
+  - speaker: narrator
+    text: "マスターは住人たちに聞き込みをすることにした。"
+  - jump:
+      - next: lobby:scene_lobby

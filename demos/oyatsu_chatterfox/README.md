@@ -5,7 +5,7 @@
 ## Architecture
 
 ```
-YamAMVA (scenario/oyatsu.yaml)
+YamAMVA (scenario/world.yaml + scenes/)
   │  YAML シナリオ制御: intro → lobby → hearing → accuse → ending
   │
   ├─ speaker / hearingmenu / accusemenu  → CLI 表示 & 入力
@@ -55,9 +55,34 @@ python3 main.py --threshold 0.3  # Change cosine threshold (default: 0.35)
 | `main.py` | CLI entry. YamAMVA / standalone 両モード |
 | `data.py` | 6NPC定義, 51セリフ, 11+26単語カード, 因子ベクトル |
 | `baker.py` | data.py → MxBS cells (oyatsu_chatterfox.db) |
-| `scenario/oyatsu.yaml` | YamAMVA シナリオ定義 |
+| `scenario/world.yaml` | YamAMVA v1.1 World 定義（分割版） |
+| `scenario/scenes/` | シーンファイル群（intro, lobby, hear_*, endings） |
+| `scenario/oyatsu.yaml` | YamAMVA v1.0 シナリオ（単一ファイル版、参考用） |
 | `preset.py` | 16因子名 |
 | `game_state.py` | standalone mode 用（deprecated） |
+
+## Scenario structure
+
+v1.1 で world.yaml + scenes/ に分割。`yamamva_load_world()` でロードする。
+
+```
+scenario/
+├── world.yaml              ← entry, state, characters
+├── scenes/
+│   ├── intro.yaml           ← scene_intro
+│   ├── lobby.yaml           ← scene_lobby (hub)
+│   ├── hear_elmar.yaml      ← scene_hear_elmar
+│   ├── hear_sumire.yaml
+│   ├── hear_noc.yaml
+│   ├── hear_til.yaml
+│   ├── hear_veri.yaml
+│   ├── hear_mari.yaml
+│   └── endings.yaml         ← scene_accuse, scene_ending_win, scene_ending_lose
+└── oyatsu.yaml              ← v1.0 single-file version (reference)
+```
+
+Cross-file jumps use `file:scene` notation (e.g. `lobby:scene_lobby`).
+Same-file jumps use scene ID only (e.g. `scene_ending_win` in endings.yaml).
 
 ## NPC & ID Map
 

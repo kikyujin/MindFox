@@ -1,0 +1,12 @@
+scene_hear_mari:
+  - speaker: narrator
+    text: "医務室へ。マリが器具を整理している。"
+  - speaker: mari
+    text: "あら、マスター。何かありましたか？"
+  - chatterfox:
+      npc_owner: 105
+      exit_words: ["戻る", "もういい"]
+  - do:
+      hearing_count: "hearing_count + 1"
+  - jump:
+      - next: lobby:scene_lobby

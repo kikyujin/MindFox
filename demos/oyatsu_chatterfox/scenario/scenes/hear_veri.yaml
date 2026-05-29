@@ -1,0 +1,12 @@
+scene_hear_veri:
+  - speaker: narrator
+    text: "アレーテイアの間へ。ヴェリが本を閉じた。"
+  - speaker: veri
+    text: "……マスター。何かお聞きになりたいことが？"
+  - chatterfox:
+      npc_owner: 104
+      exit_words: ["戻る", "もういい"]
+  - do:
+      hearing_count: "hearing_count + 1"
+  - jump:
+      - next: lobby:scene_lobby

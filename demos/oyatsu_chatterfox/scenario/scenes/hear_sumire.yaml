@@ -1,0 +1,12 @@
+scene_hear_sumire:
+  - speaker: narrator
+    text: "西棟パーラーへ。スミレが紅茶を淹れている。"
+  - speaker: sumire
+    text: "マスター、お話ですか。"
+  - chatterfox:
+      npc_owner: 101
+      exit_words: ["戻る", "もういい"]
+  - do:
+      hearing_count: "hearing_count + 1"
+  - jump:
+      - next: lobby:scene_lobby

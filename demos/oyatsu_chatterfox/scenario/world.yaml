@@ -1,0 +1,16 @@
+id: oyatsu_chatterfox
+title: "AI館 - おやつを食べたのは誰だ（MxChatterFox版）"
+version: "0.1.1"
+entry: intro:scene_intro
+scene_path: scenes/
+
+state:
+  hearing_count: 0
+
+characters:
+  elmar:  { name: "エルマー", owner: 100 }
+  sumire: { name: "スミレ",   owner: 101 }
+  noc:    { name: "ノクちん", owner: 102 }
+  til:    { name: "ティル",   owner: 103 }
+  veri:   { name: "ヴェリ",   owner: 104 }
+  mari:   { name: "マリ",     owner: 105 }

@@ -1,0 +1,30 @@
+scene_accuse:
+  - speaker: narrator
+    text: "犯人を指名する時が来た。"
+  - accusemenu:
+      style: vertical
+      elements:
+        - { key: elmar,  label: "エルマー" }
+        - { key: sumire, label: "スミレ" }
+        - { key: noc,    label: "ノクちん" }
+        - { key: til,    label: "ティル" }
+        - { key: veri,   label: "ヴェリ" }
+        - { key: mari,   label: "マリ" }
+  - incase:
+      - when: "$result == 'til'"
+        next: scene_ending_win
+      - next: scene_ending_lose
+
+scene_ending_win:
+  - speaker: narrator
+    text: "正解！ 犯人はティルだった！"
+  - speaker: til
+    text: "……バレた。あのチョコ美味しかったんだもん"
+  - end: true
+
+scene_ending_lose:
+  - speaker: narrator
+    text: "ハズレ……その人は無実だった。"
+  - speaker: narrator
+    text: "真犯人は闇の中に消えた……。"
+  - end: true

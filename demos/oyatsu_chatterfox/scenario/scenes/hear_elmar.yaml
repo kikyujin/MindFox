@@ -1,0 +1,12 @@
+scene_hear_elmar:
+  - speaker: narrator
+    text: "北棟ラボに向かった。エルマーがキーボードを叩いている。"
+  - speaker: elmar
+    text: "にーに！ どうしたの？"
+  - chatterfox:
+      npc_owner: 100
+      exit_words: ["戻る", "もういい"]
+  - do:
+      hearing_count: "hearing_count + 1"
+  - jump:
+      - next: lobby:scene_lobby
