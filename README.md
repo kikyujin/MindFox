@@ -215,6 +215,7 @@ MindFox/
     ├── mxyamamva_api.md        # MxYamAMVA C API reference
     ├── mxmf_architecture.md    # MxMindFox architecture and specification
     ├── oyatsu_spec.md          # AI館おやつデモ game specification
+    ├── oyatsu_chatterfox_spec.md # おやつ事件 MxChatterFox demo specification
     ├── pageone_spec.md         # Page One demo specification (decay test)
     └── sengoku_report.md       # Sengoku SIM demo technical report
 ```
