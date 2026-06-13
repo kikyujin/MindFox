@@ -764,7 +764,7 @@ prompt = f"""
 | 8 | pageone v0.4 移行（pageone_mood.json + memory.py 改修） | 50ゲーム × 3条件の比較ログ | 7 |
 | 9 | sengoku v2 移行（sengoku_mood.json + 覇気パッチ削除） | 既存 16 テスト全パス維持 | 6 |
 | 10 | oyatsu v2 移行（oyatsu_mood.json + memory.py 改修） | 3ゲームキャンペーン完走 | 7 |
-| 11 | mxbs_roadmap.md 更新（Phase 3 完了マーク + 実測値追記） | ロードマップ v1.4 | 8-10 |
+| 11 | ロードマップ更新（Phase 3 完了マーク + 実測値追記） | ロードマップ v1.4 | 8-10 |
 
 ### 13.1 Phase 1-7 が MxMindFox 本体実装
 
@@ -828,7 +828,7 @@ prompt = f"""
 
 ## 16. ロードマップ位置
 
-`mxbs_roadmap.md` の Phase 3 に対応。完了時に以下が更新される：
+ロードマップ (internal) の Phase 3 に対応。完了時に以下が更新される：
 
 - Phase 3 「MxMindFox 切り出し」が ✅ 完了
 - pageone v0.4 / sengoku v2 / oyatsu v2 の実測値追記
@@ -844,7 +844,7 @@ prompt = f"""
 | `mxbs_concept.md` | MxBS の概念 |
 | `mxbs_spec.md` | MxBS の仕様 |
 | `mxbs_api_reference.md` | MxBS の C API |
-| `mxbs_roadmap.md` | 全体ロードマップ |
+| ロードマップ (internal) | 全体ロードマップ |
 | `pageone_spec.md` | ページワンデモ仕様（v0.4 で本書を参照） |
 | `oyatsu_spec.md` | おやつデモ仕様（v2 で本書を参照） |
 

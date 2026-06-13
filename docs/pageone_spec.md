@@ -861,7 +861,7 @@ python demos/pageone/main.py --games 50 --threshold 0.25
 
 ## 12. ロードマップ整理への影響
 
-本デモ完了時に `mxbs_roadmap.md` の未完了リストを更新：
+本デモ完了時にロードマップ (internal) の未完了リストを更新：
 
 - ✅ 忘却の定量テスト → 本デモで完了
 - → preset_guide.md の材料が揃う
