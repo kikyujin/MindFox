@@ -22,6 +22,7 @@ fn pick_random(candidates: &[&SearchResult], seed: u64, depth: usize) -> usize {
     (mixed as usize) % candidates.len()
 }
 
+#[allow(clippy::too_many_arguments)]
 pub fn cascade_search(
     db: &MxBS,
     word_features: &[[u8; FACTOR_DIM]],
@@ -163,9 +164,19 @@ mod tests {
 
         let word_snack = feat(&[(0, 220)]);
         let word_ask = feat(&[(6, 220)]);
-        let r =
-            cascade_search(&db, &[word_snack, word_ask], 100, 1, 0xFF, 1, &[], 0.35, 20, 42)
-                .unwrap();
+        let r = cascade_search(
+            &db,
+            &[word_snack, word_ask],
+            100,
+            1,
+            0xFF,
+            1,
+            &[],
+            0.35,
+            20,
+            42,
+        )
+        .unwrap();
         assert_eq!(r.cell_id, id_a);
         assert_eq!(r.depth, 2);
         assert!(!r.is_fallback);
@@ -198,8 +209,7 @@ mod tests {
         let w1 = feat(&[(0, 220)]);
         let w2 = feat(&[(1, 220)]);
         let w3 = feat(&[(6, 220)]);
-        let r =
-            cascade_search(&db, &[w1, w2, w3], 100, 1, 0xFF, 1, &[], 0.35, 20, 42).unwrap();
+        let r = cascade_search(&db, &[w1, w2, w3], 100, 1, 0xFF, 1, &[], 0.35, 20, 42).unwrap();
         assert_eq!(r.cell_id, id_all);
         assert_eq!(r.depth, 3);
     }
@@ -224,7 +234,14 @@ mod tests {
         let r = cascade_search(
             &db,
             &[w_snack, w_evidence, w_alibi],
-            100, 1, 0xFF, 1, &[], 0.35, 20, 42,
+            100,
+            1,
+            0xFF,
+            1,
+            &[],
+            0.35,
+            20,
+            42,
         )
         .unwrap();
         assert_eq!(r.cell_id, id);
@@ -245,8 +262,7 @@ mod tests {
         .unwrap();
 
         let w_unrelated = feat(&[(14, 220), (15, 220)]);
-        let r =
-            cascade_search(&db, &[w_unrelated], 100, 1, 0xFF, 1, &[], 0.35, 20, 42).unwrap();
+        let r = cascade_search(&db, &[w_unrelated], 100, 1, 0xFF, 1, &[], 0.35, 20, 42).unwrap();
         assert!(r.is_fallback);
         assert_eq!(r.cell_id, 0);
         assert_eq!(r.depth, 0);
@@ -276,8 +292,7 @@ mod tests {
             .unwrap();
 
         let w = feat(&[(0, 220)]);
-        let r =
-            cascade_search(&db, &[w], 100, 1, 0xFF, 1, &[id1, id2], 0.35, 20, 42).unwrap();
+        let r = cascade_search(&db, &[w], 100, 1, 0xFF, 1, &[id1, id2], 0.35, 20, 42).unwrap();
         assert!(r.is_fallback);
     }
 

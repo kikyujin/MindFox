@@ -2,8 +2,8 @@ use std::ffi::{CStr, CString, c_char, c_int};
 use std::panic;
 use std::ptr;
 
-use crate::{Cell, FACTOR_DIM, MxBS, MxBSConfig};
 use crate::yamamva::MxYamAMVAState;
+use crate::{Cell, FACTOR_DIM, MxBS, MxBSConfig};
 
 pub type MxBSHandle = MxBS;
 
@@ -463,7 +463,7 @@ pub unsafe extern "C" fn mxbs_chatterfox_search(
     top_k: c_int,
     seed: u64,
 ) -> *const c_char {
-    if h.is_null() || word_features_packed.is_null() || num_words < 1 || num_words > 3 {
+    if h.is_null() || word_features_packed.is_null() || !(1..=3).contains(&num_words) {
         return ptr::null();
     }
     let result = panic::catch_unwind(panic::AssertUnwindSafe(|| {
@@ -582,7 +582,12 @@ pub unsafe extern "C" fn mxbs_yamamva_prepare_lines(
         let st = unsafe { &*state };
         let db = unsafe { &*h };
         match crate::yamamva::prepare_chatterfox_lines(
-            st, db, npc_owner, viewer_id, viewer_groups, current_turn,
+            st,
+            db,
+            npc_owner,
+            viewer_id,
+            viewer_groups,
+            current_turn,
         ) {
             Ok(ids) => to_json_cstring(&ids),
             Err(_) => ptr::null(),

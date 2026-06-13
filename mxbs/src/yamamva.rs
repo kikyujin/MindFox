@@ -7,6 +7,12 @@ pub struct MxYamAMVAState {
     keyword_cells: HashMap<String, u64>,
 }
 
+impl Default for MxYamAMVAState {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl MxYamAMVAState {
     pub fn new() -> Self {
         Self {
@@ -123,7 +129,11 @@ pub fn load_keywords(
             .get("grant_name")
             .and_then(|v| v.as_str())
             .map(String::from)
-            .or_else(|| meta.get("word_id").and_then(|v| v.as_str()).map(String::from));
+            .or_else(|| {
+                meta.get("word_id")
+                    .and_then(|v| v.as_str())
+                    .map(String::from)
+            });
 
         let is_initial = meta
             .get("initial")
@@ -185,7 +195,13 @@ mod tests {
         state.add_flag("ティルが怪しい");
         state.add_flag("犯行は1時以降");
 
-        let check = vec![s("包み紙"), s("ティルが怪しい"), s("犯行は1時以降"), s("高級チョコレート"), s("足音がティルに似ている")];
+        let check = vec![
+            s("包み紙"),
+            s("ティルが怪しい"),
+            s("犯行は1時以降"),
+            s("高級チョコレート"),
+            s("足音がティルに似ている"),
+        ];
         let rate = keyword_gate(&state, &check);
         assert!((rate - 0.6).abs() < 0.01);
     }
