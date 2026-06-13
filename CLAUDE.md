@@ -12,7 +12,7 @@ MxMindFox workspace — Rust crate for game NPC memory management using GM-defin
   - `src/preset.rs` — Preset loading from JSON, scoring prompt generation, LLM response parsing
   - `src/chatterfox.rs` — MxChatterFox: cosine cascade search (backtracking N-word filter on top of MxBS search)
   - `src/yamamva.rs` — MxYamAMVA: game state management (keyword flags, grants/requires, ACL-based word visibility)
-  - `src/ffi.rs` — C API (29 extern "C" functions). See mxbs_spec.md §15, docs/mxchatterfox_api.md, docs/mxyamamva_api.md
+  - `src/ffi.rs` — C API (30 extern "C" functions). See mxbs_spec.md §15, docs/mxchatterfox_api.md, docs/mxyamamva_api.md
   - `python/mxbs_bridge.py` — Python ctypes wrapper for libmxbs (MxBSBridge + MxYamAMVAState)
   - `python/yamamva_bridge.py` — Python ctypes wrapper for libyamamva (YamAMVA scenario engine)
 - **mxmindfox crate** (`mxmindfox/`): Orchestration layer, currently a skeleton.
@@ -69,7 +69,7 @@ Rust edition 2024 (requires rustc 1.85+). Currently on rustc 1.94.0.
 - MxChatterFox (`cascade_search`) is stateless — combines MxBS search() + cosine_similarity(), no internal state.
 - MxYamAMVA (`MxYamAMVAState`) holds keyword flags + cell_id map. Does NOT depend on YamAMVA crate — communicates via JSON strings.
 - `search([0u8; 16], ...)` with all-zero query returns all cells (non-vector mode). Used by prepare_chatterfox_lines.
-- YamAMVA (external, `~/work/YAMAMVA`) is MIT OSS. MxBS has zero compile-time dependency on it — Python bridge only.
+- YamAMVA (external, [github.com/kikyujin/YAMAMVA](https://github.com/kikyujin/YAMAMVA)) is MIT OSS. MxBS has zero compile-time dependency on it — Python bridge only.
 
 ## Dependencies
 

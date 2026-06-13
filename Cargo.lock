@@ -655,7 +655,7 @@ dependencies = [
 
 [[package]]
 name = "mxbs"
-version = "0.3.1"
+version = "0.4.0"
 dependencies = [
  "rusqlite",
  "serde",
@@ -665,7 +665,7 @@ dependencies = [
 
 [[package]]
 name = "mxmindfox"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "mxbs",
  "rand",

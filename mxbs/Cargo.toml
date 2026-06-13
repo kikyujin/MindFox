@@ -1,6 +1,6 @@
 [package]
 name = "mxbs"
-version = "0.3.1"
+version = "0.4.0"
 description = "Factor-vector memory engine for game NPCs — 16-byte vectors, SQLite only, no embeddings"
 keywords = ["gamedev", "npc", "memory", "sqlite", "ai"]
 categories = ["game-development", "database"]

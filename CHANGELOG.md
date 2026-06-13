@@ -6,6 +6,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## MxMindFox
 
+### [0.1.1] — 2026-06-13
+
+#### Changed
+- Bump mxbs dependency to 0.4 (no code changes)
+
 ### [0.1.0] — 2026-05-02
 
 Initial release. Multi-agent mood, decision, and diplomacy layer on MxBS.
@@ -22,6 +27,28 @@ Initial release. Multi-agent mood, decision, and diplomacy layer on MxBS.
 ---
 
 ## MxBS
+
+### [0.4.0] — 2026-05-29
+
+MxChatterFox + MxYamAMVA. Cascade search and game-state management as MxBS modules.
+
+#### Added
+- `src/chatterfox.rs` — **MxChatterFox**: cosine cascade search. Stateless backtracking N-word filter layered on `MxBS::search()` + `cosine_similarity()`. Single public `cascade_search()`.
+- `src/yamamva.rs` — **MxYamAMVA**: game state management. `MxYamAMVAState` (keyword flags + cell_id map), `keyword_gate`, `keyword_grant`, `process_grants`, `prepare_chatterfox_lines`, `load_keywords`. No compile-time dependency on the YamAMVA crate — communicates via JSON strings.
+- `src/ffi.rs` — 13 new extern "C" functions for ChatterFox + YamAMVA (17 → **30 total**)
+- `python/mxbs_bridge.py` — extended with `MxYamAMVAState` wrapper
+- `python/yamamva_bridge.py` — copied from [YAMAMVA](https://github.com/kikyujin/YAMAMVA) (`python/yamamva_bridge.py`), ctypes wrapper for libyamamva
+- `demos/oyatsu_chatterfox/` — "おやつは誰がたべた（MxChatterFox版）": YAML-driven detective game, 6 NPC × 51 lines, 88 baked cells. YamAMVA scenario + MxChatterFox cascade + MxYamAMVA state. `--rust` / `--standalone` modes.
+- `docs/mxchatterfox_api.md`, `docs/mxyamamva_api.md` — C API references
+- 17 new tests (chatterfox 8, yamamva 9 → **61 tests total**: 52 unit + 9 FFI)
+
+#### Changed
+- oyatsu_chatterfox scenario split into `world.yaml` + `scenes/` (YamAMVA v1.1 layout)
+- `accuse` unlocks after 1 hearing (not all 6) — README fix
+
+#### Removed
+- `demos/dokidoki/` + `docs/dokidoki_memory_spec.md` — moved to internal development (design phase)
+- `docs/mxbs_roadmap.md` — moved to internal
 
 ### [0.3.1] — 2026-05-02
 

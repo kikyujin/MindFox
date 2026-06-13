@@ -1,5 +1,7 @@
 # MindFox
 
+![MxMindFox — Game NPC Memory & Forgetting Middleware](docs/hero.jpg)
+
 **Your NPCs remember. Your NPCs forget. No cloud required.**
 
 MxMindFox is an offline-first memory middleware for game NPCs and autonomous agents.
@@ -34,9 +36,10 @@ Most NPC memory solutions require cloud APIs, heavyweight ML models, or always-o
 │  Mood · Decision · Diplomacy · Threshold     │
 │  C API (cdylib) + Python ctypes bridge       │
 ├──────────────────────────────────────────────┤
-│  MxBS                   ~1200 lines Rust     │
+│  MxBS                   ~3100 lines Rust     │
 │  Memory engine (deterministic, fast)         │
 │  store · search · dream · reinforce · inspire│
+│  + ChatterFox (cascade) · YamAMVA (state)    │
 │  C API (cdylib) + Python ctypes bridge       │
 ├──────────────────────────────────────────────┤
 │  SQLite (bundled via rusqlite)               │
@@ -52,8 +55,8 @@ You can use MxBS alone if you just need NPC memory. Add MxMindFox when you want 
 
 | Crate | Version | Description |
 |---|---|---|
-| [**mxbs**](mxbs/) | 0.3.1 | Factor-vector memory engine. Store, search, forget, dream. |
-| [**mxmindfox**](mxmindfox/) | 0.1.0 | Multi-agent mood, decision, diplomacy layer on MxBS. |
+| [**mxbs**](mxbs/) | 0.4.0 | Factor-vector memory engine. Store, search, forget, dream. Cascade search (ChatterFox) + game state (YamAMVA). |
+| [**mxmindfox**](mxmindfox/) | 0.1.1 | Multi-agent mood, decision, diplomacy layer on MxBS. |
 
 ## Quick Start — MxBS
 
@@ -138,19 +141,20 @@ Two models, both temperature-controlled:
 | Language | Mechanism | Status |
 |---|---|---|
 | **Rust** | Native crate | ✅ Stable |
-| **C / C++** | `cdylib` extern functions | ✅ MxBS: 17 functions, MxMindFox: 9 functions |
+| **C / C++** | `cdylib` extern functions | ✅ MxBS: 30 functions, MxMindFox: 9 functions |
 | **Python** | ctypes bridge | ✅ `mxbs_bridge.py` + `mxmindfox_bridge.py` |
 | **C# (Unity)** | P/Invoke over C API | 🔜 Planned |
 | **GDScript (Godot)** | GDExtension / C API | 🔜 Planned |
 
 ## Demos
 
-Three demos ship with the workspace, each proving a different capability:
+Four demos ship with the workspace, each proving a different capability:
 
 | Demo | LLM | What it proves |
 |------|-----|----------------|
 | [**sengoku**](demos/sengoku/) | gemma4:e2b | Warlord SIM — mood-based attack thresholds, rule-based scoring |
 | [**oyatsu**](demos/oyatsu/) | gemma4:26b | Social deduction — 7 characters, cross-game memory, diplomacy |
+| [**oyatsu_chatterfox**](demos/oyatsu_chatterfox/) | None | Detective game — cascade search (ChatterFox) + YamAMVA state, 6 NPC × 51 lines, YAML-driven |
 | [**pageone**](demos/pageone/) | None | Card game — quantitative decay test, 50 games in <1 second |
 
 The **pageone** demo is the best starting point — it runs with zero external dependencies and demonstrates that MxBS's forgetting + reinforce alone can create distinct character personalities.
@@ -180,7 +184,9 @@ MindFox/
 │   │   ├── lib.rs         # Core: Cell, MxBS, search, dream, inspire
 │   │   ├── agents.rs      # AgentRegistry helper
 │   │   ├── preset.rs      # Preset loading + scoring prompts
-│   │   └── ffi.rs         # C API (17 extern "C" functions)
+│   │   ├── chatterfox.rs  # MxChatterFox: cosine cascade search
+│   │   ├── yamamva.rs     # MxYamAMVA: game state management
+│   │   └── ffi.rs         # C API (30 extern "C" functions)
 │   └── python/
 │       └── mxbs_bridge.py
 ├── mxmindfox/             # Mood / Decision / Diplomacy layer
@@ -198,11 +204,19 @@ MindFox/
 ├── demos/
 │   ├── sengoku/           # Warlord SIM (Rust binary)
 │   ├── oyatsu/            # Social deduction (Python + Ollama)
+│   ├── oyatsu_chatterfox/ # Detective game (YAML + cascade search, no LLM)
 │   └── pageone/           # Card game decay test (Python, no LLM)
 └── docs/
-    ├── concept.md         # Why factor vectors beat embeddings
-    ├── preset_guide.md    # How to design factor presets
-    └── spec.md            # Full API specification
+    ├── mxbs_concept.md         # Why factor vectors beat embeddings
+    ├── mxbs_spec.md            # MxBS full API specification
+    ├── mxchatterfox_concept.md # MxChatterFox design and cascade search
+    ├── mxchatterfox_api.md     # MxChatterFox C API reference
+    ├── mxyamamva_concept.md    # MxYamAMVA design and state management
+    ├── mxyamamva_api.md        # MxYamAMVA C API reference
+    ├── mxmf_architecture.md    # MxMindFox architecture and specification
+    ├── oyatsu_spec.md          # AI館おやつデモ game specification
+    ├── pageone_spec.md         # Page One demo specification (decay test)
+    └── sengoku_report.md       # Sengoku SIM demo technical report
 ```
 
 ## Performance
@@ -246,6 +260,6 @@ cargo build --workspace --release
 
 MIT — See [LICENSE](LICENSE) for details.
 
-If you ship a game using MxMindFox, we'd love a copy! Not a legal requirement — just a friendly request from the author. 🦊
+If you ship a game using MindFox, we'd love a copy! Not a legal requirement — just a friendly request from the author. 🦊
 
 Made with 🦊 by [MULTITAPPS Inc.](https://multitapps.com)
